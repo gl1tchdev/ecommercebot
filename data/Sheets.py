@@ -1,14 +1,14 @@
 from classes.FieldType import FieldType
-
 SHEETS = [
     {
         '_name': 'manufacturers',
         'sheet_name': 'Производители',
+        'location': ['A', 'B'],
         'fields': [
             {
                 '_name': 'ID_manufacturer',
                 'field_name': 'ID производителя',
-                'type': FieldType.string,
+                'type': FieldType.digit,
                 'required': True
             },
             {
@@ -22,6 +22,7 @@ SHEETS = [
     {
         '_name': 'models',
         'sheet_name': 'Модели',
+        'location': ['A', 'B', 'C', 'H', 'J'],
         'fields': [
             {
                 '_name': 'ID_model',
@@ -33,6 +34,12 @@ SHEETS = [
                 '_name': 'ID_manufacturer',
                 'field_name': 'ID производителя',
                 'type': FieldType.digit,
+                'required': True
+            },
+            {
+                '_name': 'name',
+                'field_name': 'Название',
+                'type': FieldType.string,
                 'required': True
             },
             {
@@ -52,6 +59,7 @@ SHEETS = [
     {
         '_name': 'cartridges',
         'sheet_name': 'Картриджи',
+        'location': ['A', 'B', 'C', 'D', 'J'],
         'fields': [
             {
                 '_name': 'ID_cartridge',
@@ -88,6 +96,7 @@ SHEETS = [
     {
         '_name': 'cartridges',
         'sheet_name': 'Картриджи',
+        'location': ['A', 'B', 'C', 'D', 'J'],
         'fields': [
             {
                 '_name': 'ID_evaporator',
@@ -124,6 +133,7 @@ SHEETS = [
     {
         '_name': 'liquids',
         'sheet_name': 'Жидкости',
+        'location': ['A', 'B', 'C', 'J'],
         'fields': [
             {
                 '_name': 'ID_liquid',
@@ -154,6 +164,7 @@ SHEETS = [
     {
         '_name': 'other',
         'sheet_name': 'Прочее',
+        'location': ['A', 'B', 'J'],
         'fields': [
             {
                 '_name': 'ID_element',

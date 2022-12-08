@@ -5,7 +5,7 @@ class monclient:
     def __init__(self):
         self.client = MongoClient()
 
-    def getClient(self):
+    def get_сlient(self):
         return self.client
 
     def add(self, collection ,doc):
