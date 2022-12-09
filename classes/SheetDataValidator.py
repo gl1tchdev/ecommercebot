@@ -6,7 +6,7 @@ from validators import url
 
 class Validator(Singleton):
     body = []
-    message = 'OK'
+    message = ''
     result = True
     kwargs = {}
 
@@ -40,17 +40,23 @@ class Validator(Singleton):
     def get_result(self):
         return self.result
 
+    def get_body(self):
+        return self.body
+
     def failure(self, message):
-        if self.message == 'OK':
-            self.message = ''
         self.result = False
         self.message += message + '; '
 
     def wipe(self):
         self.result = True
         self.body = []
-        self.message = 'ОК' #TODO пофиксить OK вначале сообщения об ошибке
+        self.message = ''
         self.kwargs = {}
+
+    def transform_ids(self):
+        for elem in self.body:
+            if elem.isdigit():
+                elem = int(elem)
 
     def process(self):
         # TODO: Добавить проверку на совпадение ID у элементов
@@ -64,12 +70,15 @@ class Validator(Singleton):
             required = field['required']
             if required and len(elem) == 0:
                 self.failure('Поле "%s" обязательно к указанию' % field['field_name'])
-            type = field['type']
-            if type == FieldType.digit:
+            fieldtype = field['type']
+            if fieldtype == FieldType.digit:
                 if not elem.isdigit():
                     self.failure('Поле "%s" должно быть положительным числом' % field['field_name'])
-            elif type == FieldType.url:
+            elif fieldtype == FieldType.url:
                 if not url(elem):
                     self.failure('Поле "%s" должно быть ссылкой' % field['field_name'])
             else:
                 continue
+        if self.get_result() and not self.message:
+            self.message = 'OK'
+            self.transform_ids()

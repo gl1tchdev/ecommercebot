@@ -1,10 +1,14 @@
 from classes.SheetDataValidator import Validator
 from clients.GoogleClient import GoogleClient
+from managers.DbUploadManager import UploadManager
 from pprint import pprint
 
 validator = Validator()
 validation_manager = validator.get_manager()
 service = GoogleClient()
+mc = UploadManager()
+
+
 sheet = 'Производители'
 ranges = validation_manager.get_transformed_location(sheet_name=sheet)
 google_data = service.get(ranges)
@@ -20,14 +24,14 @@ for elem in table:
         continue
     validator.process()
     if validator.get_result():
-       batch.append(elem)
+       batch.append(validator.get_body())
     else:
         failures.append([elem, validator.get_message()])
     validator.wipe()
 
-pprint('Готово к заливке: ')
-pprint(batch)
-pprint('Не подлежит валидации: ')
-pprint(not_ready)
-pprint('Не прошло валидацию: ')
-pprint(failures)
+for elem in batch:
+    mc.set_body(validation_manager.get_list_of_service_field_names(sheet_name=sheet), elem)
+    mc.set_collection(validation_manager.get_service_name_by_sheet_name(sheet))
+    pprint(mc.is_unique())
+    #pprint(mc.upload())
+    mc.wipe()

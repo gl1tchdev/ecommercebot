@@ -35,6 +35,14 @@ class SheetManager(Singleton):
             sheets_names.append(sheet['sheet_name'])
         return sheets_names
 
+    def get_list_of_service_field_names(self, **kwargs):
+        names = []
+        fields = self.get_fields(**kwargs)
+        for field in fields:
+            names.append(field['_name'])
+        return names
+
+
     def get_transformed_location(self, **kwargs):
         sheet = self.find_sheet(**kwargs)
         sheet_name = sheet['sheet_name']
@@ -65,8 +73,6 @@ class SheetManager(Singleton):
                 for i in range(biggest_length):
                     values.append('')
                 item.update({'values': [values]})
-
-        print(biggest_length)
         for i in range(biggest_length):
             row = []
             for k in range(count_columns):

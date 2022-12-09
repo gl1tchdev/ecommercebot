@@ -8,7 +8,7 @@ class monclient:
     def get_сlient(self):
         return self.client
 
-    def add(self, collection ,doc):
+    def add(self, collection, doc):
         return getattr(self.client.vapeshop, collection).insert_one(doc)
 
     def remove(self, collection, query):
@@ -21,4 +21,4 @@ class monclient:
         return getattr(self.client.vapeshop, collection).update_many(query, update)
 
     def find(self, collection, query):
-        return getattr(self.client.vapeshop, collection).find_all(query)
+        return getattr(self.client.vapeshop, collection).find(query)
