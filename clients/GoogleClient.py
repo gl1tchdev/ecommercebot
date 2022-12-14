@@ -21,14 +21,14 @@ class GoogleClient(Singleton):
         ).execute()
         return data.get('valueRanges')
 
-    def send_response(self, sheet, range, res):
+    def send_response(self, sheet, index, res):
         resource = {
             "majorDimension": "ROWS",
             "values": [[res]]
         }
         return self.service.spreadsheets().values().update(
             spreadsheetId=self.spreadsheet_id,
-            range=sheet + '!' + range,
+            range=sheet + '!' + 'L%i' % (index + 3),
             valueInputOption='RAW',
             body=resource
         ).execute()

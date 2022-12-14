@@ -20,5 +20,11 @@ class monclient:
     def update_many(self, collection, query, update):
         return getattr(self.client.vapeshop, collection).update_many(query, update)
 
-    def find(self, collection, query):
-        return getattr(self.client.vapeshop, collection).find(query)
+    def delete(self, collection, query):
+        return getattr(self.client.vapeshop, collection).delete_one(query)
+
+    def find(self, collection, query={}):
+        result = list(getattr(self.client.vapeshop, collection).find(query))
+        for elem in result:
+            elem.pop('_id')
+        return result

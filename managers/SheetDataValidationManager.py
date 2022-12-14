@@ -52,6 +52,13 @@ class SheetManager(Singleton):
             result.append('%s!%s3:%s' % (sheet_name, item, item))
         return result
 
+    def find_copies(self, validated, elem):
+        id = elem[0]
+        for el in validated:
+            if el[0] == id:
+                return True
+        else: return False
+
     def compile2table(self, google_data):
         count_columns = len(google_data)
         biggest_length = 0

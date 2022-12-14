@@ -1,6 +1,7 @@
 from classes.Singleton import Singleton
 from classes.FieldType import FieldType
 from managers.SheetDataValidationManager import SheetManager
+from managers.DbUploadManager import UploadManager
 from validators import url
 
 
@@ -53,13 +54,8 @@ class Validator(Singleton):
         self.message = ''
         self.kwargs = {}
 
-    def transform_ids(self):
-        for elem in self.body:
-            if elem.isdigit():
-                elem = int(elem)
 
     def process(self):
-        # TODO: Добавить проверку на совпадение ID у элементов
         validation_fields = self.manager.get_fields(**self.kwargs)
         if len(self.body) != len(validation_fields):
             self.failure('Нет требуемого количества полей')
@@ -74,6 +70,8 @@ class Validator(Singleton):
             if fieldtype == FieldType.digit:
                 if not elem.isdigit():
                     self.failure('Поле "%s" должно быть положительным числом' % field['field_name'])
+                else:
+                    self.body[i] = int(elem)
             elif fieldtype == FieldType.url:
                 if not url(elem):
                     self.failure('Поле "%s" должно быть ссылкой' % field['field_name'])
@@ -81,4 +79,3 @@ class Validator(Singleton):
                 continue
         if self.get_result() and not self.message:
             self.message = 'OK'
-            self.transform_ids()

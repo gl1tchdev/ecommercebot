@@ -3,33 +3,48 @@ from clients.MongoClient import monclient
 
 
 class UploadManager(Singleton):
-    body = {}
-    collection = ''
     mc = monclient()
 
-    def set_body(self, keys, array):
+    def get_client(self):
+        return self.mc
+
+    def split_data(self, keys, array):
         result = {}
         for i in range(len(keys)):
             result.update({keys[i]: array[i]})
-        self.body = result
+        return result
 
-    def set_collection(self, collection):
-        self.collection = collection
+    def upload(self, collection, elem):
+        return self.mc.add(collection, elem)
 
-    def upload(self):
-        return self.mc.add(self.collection, self.body)
+    def delete(self, collection, elem):
+        return self.mc.delete(collection, elem)
 
-    def is_unique(self):
-        search = {}
-        for key in self.body:
-            if key[0:2] == 'ID':
-                search = {key: self.body[key]}
-        result = len(list(self.mc.find(self.collection, search)))
-        if result == 0:
-            return True
-        else:
+    def is_in_db(self, collection, elem):
+        key = next(iter(elem))
+        search = {key: elem[key]}
+        result = self.mc.find(collection, search)
+        if len(result) == 0:
             return False
+        else:
+            return True
 
-    def wipe(self):
-        self.body = []
-        self.collection = ''
+    def has_copies_in_db(self, collection, elem):
+        key = next(iter(elem))
+        search = {key: elem[key]}
+        result = self.mc.find(collection, search)
+        if len(result) > 0:
+            return False
+        else:
+            return True
+
+    def full_check(self, collection, search):
+        return True if len(self.mc.find(collection, search)) == 0 else False
+
+    def get_difference_to_deploy(self, collection, batch):
+        collection_data = self.mc.find(collection)
+        return [x for x in batch if x not in collection_data]
+
+    def get_difference_to_delete(self, collection, batch):
+        collection_data = self.mc.find(collection)
+        return [x for x in collection_data if x not in batch]
