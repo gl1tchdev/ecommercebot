@@ -20,26 +20,10 @@ class UploadManager(Singleton):
     def delete(self, collection, elem):
         return self.mc.delete(collection, elem)
 
-    def is_in_db(self, collection, elem):
+    def search_in_db(self, collection, elem):
         key = next(iter(elem))
         search = {key: elem[key]}
-        result = self.mc.find(collection, search)
-        if len(result) == 0:
-            return False
-        else:
-            return True
-
-    def has_copies_in_db(self, collection, elem):
-        key = next(iter(elem))
-        search = {key: elem[key]}
-        result = self.mc.find(collection, search)
-        if len(result) > 0:
-            return False
-        else:
-            return True
-
-    def full_check(self, collection, search):
-        return True if len(self.mc.find(collection, search)) == 0 else False
+        return self.mc.find(collection, search)
 
     def get_difference_to_deploy(self, collection, batch):
         collection_data = self.mc.find(collection)
