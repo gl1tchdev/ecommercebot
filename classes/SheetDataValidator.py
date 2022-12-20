@@ -1,8 +1,7 @@
 from classes.Singleton import Singleton
 from classes.FieldType import FieldType
 from managers.SheetDataValidationManager import SheetManager
-from managers.DbUploadManager import UploadManager
-from validators import url
+from managers.PhotoManager import PhotoManager
 
 
 class Validator(Singleton):
@@ -12,6 +11,7 @@ class Validator(Singleton):
     kwargs = {}
 
     manager = SheetManager()
+    ph = PhotoManager()
 
     def get_manager(self):
         return self.manager
@@ -73,8 +73,8 @@ class Validator(Singleton):
                 else:
                     self.body[i] = int(elem)
             elif fieldtype == FieldType.url:
-                if not url(elem):
-                    self.failure('Поле "%s" должно быть ссылкой' % field['field_name'])
+                if not self.ph.is_img_valid(elem):
+                    self.failure('Ссылка на изображение некорректна')
             else:
                 continue
         if self.get_result() and not self.message:
