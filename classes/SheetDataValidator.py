@@ -54,22 +54,23 @@ class Validator(Singleton):
         self.message = ''
         self.kwargs = {}
 
-
     def process(self):
         validation_fields = self.manager.get_fields(**self.kwargs)
         if len(self.body) != len(validation_fields):
             self.failure('Нет требуемого количества полей')
             return
         for i in range(len(self.body)):
-            field = validation_fields[i]
+            fields = validation_fields[i]
             elem = self.body[i]
-            required = field['required']
+            required = fields['required']
+            if (fields['_name'] == 'strength') and not (elem in ['hard', 'medium']):
+                self.failure('В поле крепость может быть только hard/medium')
             if required and len(elem) == 0:
-                self.failure('Поле "%s" обязательно к указанию' % field['field_name'])
-            fieldtype = field['type']
+                self.failure('Поле "%s" обязательно к указанию' % fields['field_name'])
+            fieldtype = fields['type']
             if fieldtype == FieldType.digit:
                 if not elem.isdigit():
-                    self.failure('Поле "%s" должно быть положительным числом' % field['field_name'])
+                    self.failure('Поле "%s" должно быть положительным числом' % fields['field_name'])
                 else:
                     self.body[i] = int(elem)
             elif fieldtype == FieldType.url:

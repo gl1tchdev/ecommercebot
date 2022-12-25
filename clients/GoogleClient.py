@@ -2,10 +2,11 @@ import httplib2
 import apiclient.discovery
 from oauth2client.service_account import ServiceAccountCredentials
 from classes.Singleton import Singleton
+import config
 
 class GoogleClient(Singleton):
     def __init__(self):
-        self.spreadsheet_id = '1Zr1MbTxQEueIj0MWLqrR1LEBgI1soYEzhbZ0ChWJ28Y'
+        self.spreadsheet_id = config.spreadsheet_id
         credentials = ServiceAccountCredentials.from_json_keyfile_name(
             'credentials.json',
             ['https://www.googleapis.com/auth/spreadsheets',
@@ -20,6 +21,18 @@ class GoogleClient(Singleton):
             majorDimension='COLUMNS'
         ).execute()
         return data.get('valueRanges')
+
+    def write_batch(self, sheet, range, list):
+        resource = {
+            "majorDimension": "COLUMNS",
+            "values": [list]
+        }
+        return self.service.spreadsheets().values().update(
+            spreadsheetId=self.spreadsheet_id,
+            range=sheet + '!' + range,
+            valueInputOption='RAW',
+            body=resource
+        ).execute()
 
     def send_response(self, sheet, index, res):
         resource = {
