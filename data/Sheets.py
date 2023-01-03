@@ -94,8 +94,8 @@ SHEETS = [
         ]
     },
     {
-        '_name': 'cartridges',
-        'sheet_name': 'Картриджи',
+        '_name': 'evaporators',
+        'sheet_name': 'Испарители',
         'location': ['A', 'B', 'C', 'D', 'J'],
         'fields': [
             {
@@ -226,11 +226,17 @@ SHEETS = [
     {
         '_name': 'other',
         'sheet_name': 'Прочее',
-        'location': ['A', 'B', 'J'],
+        'location': ['A', 'B', 'C','J'],
         'fields': [
             {
                 '_name': 'ID_element',
                 'field_name': 'ID элемента',
+                'type': FieldType.digit,
+                'required': True
+            },
+            {
+                '_name': 'ID_manufacturer',
+                'field_name': 'ID производителя',
                 'type': FieldType.digit,
                 'required': True
             },

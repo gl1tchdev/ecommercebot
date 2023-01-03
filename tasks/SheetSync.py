@@ -30,7 +30,7 @@ for sheet in sheets:
         if validator.get_result():
             validated.append([i, validator.get_body()])
         else:
-            service.send_response(sheet, i, validator.get_message())
+            response.update({i: validator.get_message()})
         validator.wipe()
 
     for valid in validated:
@@ -48,7 +48,7 @@ for sheet in sheets:
         split_data = mc.split_data(service_field_names, valid[1])
         db_batch = mc.search_in_db(sheet_service_name, split_data)
         if len(db_batch) == 0:
-            response.update({valid[0]: " Будет загружено в базу данных"})
+            response.update({valid[0]: "Будет загружено в базу данных"})
             batch.append(split_data)
         elif len(db_batch) == 1:
             if split_data == db_batch[0]:

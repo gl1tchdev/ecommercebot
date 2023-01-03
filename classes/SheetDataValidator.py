@@ -69,11 +69,15 @@ class Validator(Singleton):
                 self.failure('Поле "%s" обязательно к указанию' % fields['field_name'])
             fieldtype = fields['type']
             if fieldtype == FieldType.digit:
+                if not required:
+                    continue
                 if not elem.isdigit():
                     self.failure('Поле "%s" должно быть положительным числом' % fields['field_name'])
                 else:
                     self.body[i] = int(elem)
             elif fieldtype == FieldType.url:
+                if not required:
+                    continue
                 if not self.ph.is_img_valid(elem):
                     self.failure('Ссылка на изображение некорректна')
             else:

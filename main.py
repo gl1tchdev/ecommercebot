@@ -12,4 +12,11 @@ def send_welcome(message):
         return
     bot.reply_to(message, "Привет")
 
+@bot.callback_query_handler(func=lambda call: True)
+def callback_worker(call):
+    if not mm.is_in_whitelist(call.message.from_user.username):
+        return
+
+
+
 bot.infinity_polling()
