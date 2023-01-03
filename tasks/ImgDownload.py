@@ -18,5 +18,12 @@ def download():
         if len(docs) == 0:
             continue
         for elem in docs:
+            if not elem['url']:
+                continue
+            fs = mc.find('photos', {'url': elem['url']})
+            if len(fs) > 0:
+                continue
             filename = ph.download(elem['url'])
             mc.add('photos', {'url': elem['url'], 'filename': filename})
+
+download()

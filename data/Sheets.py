@@ -198,8 +198,8 @@ SHEETS = [
                 'required': True
             },
             {
-                '_name': 'ID_manufacturer',
-                'field_name': 'ID производителя',
+                '_name': 'ID_brand',
+                'field_name': 'ID бренда',
                 'type': FieldType.digit,
                 'required': True
             },

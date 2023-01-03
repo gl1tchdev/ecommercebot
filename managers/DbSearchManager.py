@@ -67,11 +67,13 @@ class SearchManager(Singleton):
             'search': self.global_search,
             'model_card': self.model_card,
             'cartridge_card': self.cartridge_card,
-            'evaporator_card': self.evaporator_card
+            'evaporator_card': self.evaporator_card,
+            'liquid_card': self.liquid_card,
+            'other_card': self.other_card
         }
         self.collections = {
             'devices': ['manufacturers', 'ID_manufacturer'],
-            'liquids': ['liquids', 'strength'],
+            'liquids': ['liquids', 'ID_brand'],
             'model': ['models', 'ID_model'],
             'cartridge': ['cartridges', 'ID_cartridge'],
             'evaporator': ['evaporators', 'ID_evaporator'],
@@ -79,8 +81,8 @@ class SearchManager(Singleton):
             'other': ['other', 'ID_element'],
             'liquids_hard': ['liquids', 'ID_liquid'],
             'liquids_medium': ['liquids', 'ID_liquid'],
-            'medium': ['liquids', 'strength'],
-            'hard': ['liquids', 'strength'],
+            'medium': ['liquids', 'ID_liquid'],
+            'hard': ['liquids', 'ID_liquid'],
         }
         self.translations = {
             'models': self.vm.get_sheet_name_by_service_name('models'),
@@ -151,7 +153,10 @@ class SearchManager(Singleton):
         if prev_last == 'devices':
             a = filter(lambda value: not self.empty(self.get_search_word(value), {c[1]: int(last)}), l)
         else:
-            a = filter(lambda value: not self.empty(self.get_search_word(value), {c[1]: value}), l)
+            if prev_last == 'liquids':
+                a = filter(lambda value: not self.empty(self.get_search_word(value), {c[1]: int(last),'strength': value}), l)
+            else:
+                a = filter(lambda value: not self.empty(self.get_search_word(value), {c[1]: value}), l)
         if not d:
             result = {value: self.translate(value) for value in a}
         else:
@@ -191,20 +196,44 @@ class SearchManager(Singleton):
             to_d.update({elem[fields[1]]: str(elem[fields[0]])})
         return to_d
 
-    def global_search(self, arg):
+    def global_search(self, query):
         return [1, 2, 3, 4]
 
     def liquids_manufacturer(self, query):
-        liquids = self.mc.find('liquids_brands', query)
-        return self.to_dict(liquids, ['name', 'ID_brand'])
+        liquids = self.mc.find('liquids_brands')
+        return self.to_dict(liquids, ['name', 'ID_brand']) if len(liquids) > 0 else None
 
     def device_manufacturer(self, query):
         manufacturers = self.mc.find('manufacturers')
-        return self.to_dict(manufacturers, ['manufacturer_name', 'ID_manufacturer'])
+        return self.to_dict(manufacturers, ['manufacturer_name', 'ID_manufacturer']) if len(manufacturers) > 0 else None
 
     def model(self, query):
         models = self.mc.find('models', query)
-        return self.to_dict(models, ['name', 'ID_model'])
+        return self.to_dict(models, ['name', 'ID_model']) if len(models) > 0 else None
+
+    def cartridge(self, query):
+        cartridges = self.mc.find('cartridges', query)
+        return self.to_dict(cartridges, ['name', 'ID_cartridge']) if len(cartridges) > 0 else None
+
+    def liquids_hard(self, query):
+        l_hard = self.mc.find('liquids', {'strength': 'hard'})
+        return self.to_dict(l_hard, ['name', 'ID_liquid']) if len(l_hard) > 0 else None
+
+    def liquids_medium(self, query):
+        l_medium = self.mc.find('liquids', {'strength': 'medium'})
+        return self.to_dict(l_medium, ['name', 'ID_liquid']) if len(l_medium) > 0 else None
+
+    def evaporator(self, query):
+        evaporators = self.mc.find('evaporators', query)
+        return self.to_dict(evaporators, ['name', 'ID_evaporator']) if len(evaporators) > 0 else None
+
+    def tank(self, query):
+        tanks = self.mc.find('tanks', query)
+        return self.to_dict(tanks, ['name', 'ID_tank']) if len(tanks) > 0 else None
+
+    def other(self, query):
+        other = self.mc.find('other', query)
+        return self.to_dict(other, ['name', 'ID_element']) if len(other) > 0 else None
 
     def model_card(self, query):
         result = []
@@ -251,6 +280,14 @@ class SearchManager(Singleton):
         if len(list(item)) > 0:
             item = list(item)[0]
             result.append(item['name'])
+            devices = self.mc.find('models', {'ID_model': int(item['ID_model'])})
+            end = ''
+            if len(devices) > 1:
+                for device in devices:
+                    end += device['name'] + ';'
+            else:
+                end = devices[0]['name']
+            result.append(end)
             photo_url = item['url']
             if len(photo_url) > 0:
                 photo_obj = self.mc.find('photos', {'url': item['url']})
@@ -260,27 +297,33 @@ class SearchManager(Singleton):
         else:
             return None
 
-    def cartridge(self, query):
-        cartridges = self.mc.find('cartridges', query)
-        return self.to_dict(cartridges, ['name', 'ID_cartridge'])
+    def liquid_card(self, query):
+        result = []
+        item = self.mc.find('liquids', query)
+        if len(list(item)) > 0:
+            item = list(item)[0]
+            result.append(item['name'])
+            result.append(item['strength'])
+            photo_url = item['url']
+            if len(photo_url) > 0:
+                photo_obj = self.mc.find('photos', {'url': item['url']})
+                if len(photo_obj) > 0:
+                    result.append(photo_obj[0]['filename'])
+            return result
+        else:
+            return None
 
-    def liquids_hard(self, query):
-        l_hard = self.mc.find('liquids', {'strength': 'hard'})
-        return self.to_dict(l_hard, ['name', 'ID_liquid'])
-
-    def liquids_medium(self):
-        l_medium = self.mc.find('liquids', {'strength': 'medium'})
-        return self.to_dict(l_medium, ['name', 'ID_liquid'])
-
-    def evaporator(self):
-        cartridges = self.mc.find('evaporators')
-        return self.to_dict(cartridges, ['name', 'ID_evaporator'])
-
-    def tank(self):
-        tanks = self.mc.find('tanks')
-        return self.to_dict(tanks, ['name', 'ID_tank'])
-
-    def other(self):
-        tanks = self.mc.find('other')
-        return self.to_dict(tanks, ['name', 'ID_element'])
-
+    def other_card(self, query):
+        result = []
+        item = self.mc.find('other', query)
+        if len(list(item)) > 0:
+            item = list(item)[0]
+            result.append(item['name'])
+            photo_url = item['url']
+            if len(photo_url) > 0:
+                photo_obj = self.mc.find('photos', {'url': item['url']})
+                if len(photo_obj) > 0:
+                    result.append(photo_obj[0]['filename'])
+            return result
+        else:
+            return None
