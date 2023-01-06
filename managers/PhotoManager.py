@@ -2,6 +2,7 @@ from urllib.request import urlopen
 from urllib.error import HTTPError
 from classes.Singleton import Singleton
 from validators import url
+from clients.MongoClient import monclient
 import os
 import httplib2
 
@@ -11,6 +12,16 @@ class PhotoManager(Singleton):
         temp = os.path.dirname(__file__).replace('managers', '')
         self.picpath = os.path.join(temp, 'photos')
         self.cachepath = os.path.join(self.picpath, '.cache')
+        self.mc = monclient()
+
+    def delete_photo(self, url):
+        query = ['photos', {'url': url}]
+        file = self.mc.find(*query)[0]['filename']
+        self.mc.delete(*query)
+        try:
+            os.remove(file)
+        except:
+            pass
 
     def is_img_valid(self, urls):
         if not url(urls):

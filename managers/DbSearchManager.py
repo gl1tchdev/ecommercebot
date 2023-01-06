@@ -1,57 +1,15 @@
 from classes.Singleton import Singleton
 from managers.SheetDataValidationManager import SheetManager
 from clients.MongoClient import monclient
+from classes.Decorator import fullpath
+from data.Tree import Tree
 
 class SearchManager(Singleton):
     vm = SheetManager()
     mc = monclient()
+    TREE = Tree()
 
     def __init__(self):
-        self.TREE = {
-            'start': {
-                'global_search': '$search',
-                'devices':
-                    {
-                        '$device_manufacturer':
-                            {
-                                'models':
-                                    {
-                                        '$model': '$model_card'
-                                    },
-                                'cartridges':
-                                    {
-                                        '$cartridge': '$cartridge_card'
-                                    },
-                                'evaporators':
-                                    {
-                                        '$evaporator': '$evaporator_card'
-                                    },
-                                'tanks':
-                                    {
-                                        '$tank': '$tank_card'
-                                    },
-                                'other':
-                                    {
-                                        '$other': '$other_card'
-                                    }
-                            }
-                    },
-                'liquids':
-                    {
-                        '$liquids_manufacturer':
-                            {
-                                'hard':
-                                    {
-                                        '$liquids_hard': '$liquid_card'
-                                    },
-                                'medium':
-                                    {
-                                        '$liquids_medium': '$liquid_card'
-                                    }
-                            }
-                    }
-            }
-        }
         self.load = {
             'device_manufacturer': self.device_manufacturer,
             'model': self.model,
@@ -95,6 +53,7 @@ class SearchManager(Singleton):
             'other': self.vm.get_sheet_name_by_service_name('other')
         }
 
+    @fullpath
     def dynamic_search(self, path):
         keyload = ''
         temp = ''
@@ -103,14 +62,17 @@ class SearchManager(Singleton):
         mpath = path.split('/')
         for elem in mpath:
             if not temp:
-                temp = self.TREE
+                temp = self.TREE.TREE
             for key in temp:
                 if type(key) is str:
                     if key[0] == '$' and key[1:] in self.load.keys():
                         keyload = key
             if keyload:
                 a = temp.pop(keyload)
-                temp.update(dict.fromkeys(self.load[keyload[1:]](self.get_query(mpath)).keys(), a))
+                try:
+                    temp.update(dict.fromkeys(self.load[keyload[1:]](self.get_query(mpath)).keys(), a))
+                except AttributeError:
+                    return None
                 keyload = ''
             if elem.isdigit():
                 elem = int(elem)
@@ -154,7 +116,7 @@ class SearchManager(Singleton):
             a = filter(lambda value: not self.empty(self.get_search_word(value), {c[1]: int(last)}), l)
         else:
             if prev_last == 'liquids':
-                a = filter(lambda value: not self.empty(self.get_search_word(value), {c[1]: int(last),'strength': value}), l)
+                a = filter(lambda value: not self.empty(self.get_search_word(value), {c[1]: int(last), 'strength': value}), l)
             else:
                 a = filter(lambda value: not self.empty(self.get_search_word(value), {c[1]: value}), l)
         if not d:
@@ -181,6 +143,14 @@ class SearchManager(Singleton):
         result = self.mc.find(collection, search)
         return True if len(result) == 0 else False
 
+    def check(self, s, photo=False):
+        if not photo:
+            return s if s else 'empty'
+        else:
+            photo_obj = self.mc.find('photos', {'url': s})
+            return photo_obj[0]['filename'] if len(photo_obj) > 0 else 'empty'
+
+
     def get_query(self, mpath):
         result = {}
         for i in range(len(mpath)):
@@ -197,7 +167,7 @@ class SearchManager(Singleton):
         return to_d
 
     def global_search(self, query):
-        return [1, 2, 3, 4]
+        return 'пока не работает'
 
     def liquids_manufacturer(self, query):
         liquids = self.mc.find('liquids_brands')
@@ -240,13 +210,10 @@ class SearchManager(Singleton):
         model = self.mc.find('models', query)
         if len(list(model)) > 0:
             model = list(model)[0]
+            result.append('model')
             result.append(model['name'])
-            result.append(model['description'])
-            photo_url = model['url']
-            if len(photo_url) > 0:
-                photo_obj = self.mc.find('photos', {'url': model['url']})
-                if len(photo_obj) > 0:
-                    result.append(photo_obj[0]['filename'])
+            result.append(self.check(model['description']))
+            result.append(self.check(model['url'], True))
             return result
         else:
             return None
@@ -256,6 +223,7 @@ class SearchManager(Singleton):
         cartridge = self.mc.find('cartridges', query)
         if len(list(cartridge)) > 0:
             cartridge = list(cartridge)[0]
+            result.append('cartridge')
             result.append(cartridge['name'])
             devices = self.mc.find('models', {'ID_model': int(cartridge['ID_model'])})
             end = ''
@@ -265,11 +233,7 @@ class SearchManager(Singleton):
             else:
                 end = devices[0]['name']
             result.append(end)
-            photo_url = cartridge['url']
-            if len(photo_url) > 0:
-                photo_obj = self.mc.find('photos', {'url': cartridge['url']})
-                if len(photo_obj) > 0:
-                    result.append(photo_obj[0]['filename'])
+            result.append(self.check(cartridge['url'], True))
             return result
         else:
             return None
@@ -279,6 +243,7 @@ class SearchManager(Singleton):
         item = self.mc.find('evaporators', query)
         if len(list(item)) > 0:
             item = list(item)[0]
+            result.append('evaporator')
             result.append(item['name'])
             devices = self.mc.find('models', {'ID_model': int(item['ID_model'])})
             end = ''
@@ -288,11 +253,7 @@ class SearchManager(Singleton):
             else:
                 end = devices[0]['name']
             result.append(end)
-            photo_url = item['url']
-            if len(photo_url) > 0:
-                photo_obj = self.mc.find('photos', {'url': item['url']})
-                if len(photo_obj) > 0:
-                    result.append(photo_obj[0]['filename'])
+            result.append(self.check(item['url'], True))
             return result
         else:
             return None
@@ -304,11 +265,7 @@ class SearchManager(Singleton):
             item = list(item)[0]
             result.append(item['name'])
             result.append(item['strength'])
-            photo_url = item['url']
-            if len(photo_url) > 0:
-                photo_obj = self.mc.find('photos', {'url': item['url']})
-                if len(photo_obj) > 0:
-                    result.append(photo_obj[0]['filename'])
+            result.append(self.check(item['url'], True))
             return result
         else:
             return None
@@ -318,12 +275,9 @@ class SearchManager(Singleton):
         item = self.mc.find('other', query)
         if len(list(item)) > 0:
             item = list(item)[0]
+            result.append('other')
             result.append(item['name'])
-            photo_url = item['url']
-            if len(photo_url) > 0:
-                photo_obj = self.mc.find('photos', {'url': item['url']})
-                if len(photo_obj) > 0:
-                    result.append(photo_obj[0]['filename'])
+            result.append(self.check(item['url'], True))
             return result
         else:
             return None

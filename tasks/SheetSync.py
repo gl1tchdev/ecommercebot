@@ -1,12 +1,15 @@
 from classes.SheetDataValidator import Validator
 from clients.GoogleClient import GoogleClient
 from managers.DbUploadManager import UploadManager
+from managers.PhotoManager import PhotoManager
+from tasks import ImgDownload
 
 
 validator = Validator()
 validation_manager = validator.get_manager()
 service = GoogleClient()
 mc = UploadManager()
+ph = PhotoManager()
 
 sheets = validation_manager.get_list_of_sheets()
 for sheet in sheets:
@@ -74,3 +77,7 @@ for sheet in sheets:
     if len(delete) > 0:
        for elem in delete:
             mc.delete(sheet_service_name, elem)
+            if elem.get('url'):
+                ph.delete_photo(elem['url'])
+
+ImgDownload.download()

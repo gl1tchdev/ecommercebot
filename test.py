@@ -1,5 +1,8 @@
 from managers.DbSearchManager import SearchManager
 
 sm = SearchManager()
-a = sm.dynamic_search('start/devices/1/other/1')
-print(a)
+
+print(sm.dynamic_search('start/devices'))
+print(sm.dynamic_search('start/devices/1'))
+print(sm.dynamic_search('start/devices'))
+

@@ -25,5 +25,3 @@ def download():
                 continue
             filename = ph.download(elem['url'])
             mc.add('photos', {'url': elem['url'], 'filename': filename})
-
-download()
