@@ -1,8 +1,7 @@
-from managers.DbSearchManager import SearchManager
+from tasks.SheetSync import sync
+from time import sleep
 
-sm = SearchManager()
-
-print(sm.dynamic_search('start/devices'))
-print(sm.dynamic_search('start/devices/1'))
-print(sm.dynamic_search('start/devices'))
+while True:
+    sync()
+    sleep(10)
 

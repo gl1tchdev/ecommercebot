@@ -2,7 +2,7 @@ import telebot
 from managers.MessageManager import MessageManager
 import config
 
-bot = telebot.TeleBot(config.token, parse_mode='MARKDOWN')
+bot = telebot.TeleBot(config.token, parse_mode='HTML')
 mm = MessageManager()
 
 
@@ -28,7 +28,6 @@ def callback_worker(call):
     backpathm.pop(len(backpathm) - 1)
     backpath = '/'.join(backpathm)
     search = mm.sm.dynamic_search(path)
-
     if type(search) is dict:
         keyboard = mm.get_markup(search)
         if path != 'start':
@@ -39,7 +38,8 @@ def callback_worker(call):
         result[0](**result[1])
 
     if search is None:
-        bot.send_message(call.message.chat.id, 'Ничего не найдено', reply_markup=mm.get_back_button(backpath, True))
+        bot.answer_callback_query(callback_query_id=call.id, text='Ничего не найдено')
+        return
     bot.answer_callback_query(callback_query_id=call.id)
 
 bot.infinity_polling()

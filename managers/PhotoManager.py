@@ -15,9 +15,16 @@ class PhotoManager(Singleton):
         self.mc = monclient()
 
     def delete_photo(self, url):
+        file = ''
         query = ['photos', {'url': url}]
-        file = self.mc.find(*query)[0]['filename']
-        self.mc.delete(*query)
+        try:
+            file = self.mc.find(*query)[0]['filename']
+        except:
+            pass
+        try:
+            self.mc.delete(*query)
+        except:
+            pass
         try:
             os.remove(file)
         except:

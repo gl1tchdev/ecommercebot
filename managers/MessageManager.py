@@ -29,12 +29,23 @@ class MessageManager(Singleton):
         else:
             return back_button
 
+    def make_body(self, info):
+        body = ''
+        for elem in info:
+            key, val = next(iter(elem.items()))
+            if val == 'empty':
+                continue
+            body += '%s: %s' % (key, val)
+            body += '\n'
+        return body
+
+
+
     def process_card(self, info, message, backpath, obj):
         funcs = [obj.send_photo, obj.send_message]
-        body = ''
         last_elem = info.pop(len(info)-1)
         first_elem = info.pop(0)
-        body += '/'.join(info)
+        body = self.make_body(info)
         if last_elem != 'empty':
             func = funcs[0]
         else:

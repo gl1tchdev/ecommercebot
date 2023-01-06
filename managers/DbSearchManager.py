@@ -2,11 +2,13 @@ from classes.Singleton import Singleton
 from managers.SheetDataValidationManager import SheetManager
 from clients.MongoClient import monclient
 from classes.Decorator import fullpath
+from managers.HTMLManager import HTMLManager
 from data.Tree import Tree
 
 class SearchManager(Singleton):
     vm = SheetManager()
     mc = monclient()
+    hm = HTMLManager()
     TREE = Tree()
 
     def __init__(self):
@@ -27,7 +29,8 @@ class SearchManager(Singleton):
             'cartridge_card': self.cartridge_card,
             'evaporator_card': self.evaporator_card,
             'liquid_card': self.liquid_card,
-            'other_card': self.other_card
+            'other_card': self.other_card,
+            'tank_card': self.tank_card
         }
         self.collections = {
             'devices': ['manufacturers', 'ID_manufacturer'],
@@ -150,6 +153,12 @@ class SearchManager(Singleton):
             photo_obj = self.mc.find('photos', {'url': s})
             return photo_obj[0]['filename'] if len(photo_obj) > 0 else 'empty'
 
+    def get_devices(self, query):
+        search = self.mc.find('models', query)
+        if len(search) == 0:
+            return 'empty'
+        else:
+            return search[0]['name']
 
     def get_query(self, mpath):
         result = {}
@@ -167,7 +176,7 @@ class SearchManager(Singleton):
         return to_d
 
     def global_search(self, query):
-        return 'пока не работает'
+        pass
 
     def liquids_manufacturer(self, query):
         liquids = self.mc.find('liquids_brands')
@@ -186,11 +195,13 @@ class SearchManager(Singleton):
         return self.to_dict(cartridges, ['name', 'ID_cartridge']) if len(cartridges) > 0 else None
 
     def liquids_hard(self, query):
-        l_hard = self.mc.find('liquids', {'strength': 'hard'})
+        query.update({'strength': 'hard'})
+        l_hard = self.mc.find('liquids', query)
         return self.to_dict(l_hard, ['name', 'ID_liquid']) if len(l_hard) > 0 else None
 
     def liquids_medium(self, query):
-        l_medium = self.mc.find('liquids', {'strength': 'medium'})
+        query.update({'strength': 'medium'})
+        l_medium = self.mc.find('liquids', query)
         return self.to_dict(l_medium, ['name', 'ID_liquid']) if len(l_medium) > 0 else None
 
     def evaporator(self, query):
@@ -211,8 +222,8 @@ class SearchManager(Singleton):
         if len(list(model)) > 0:
             model = list(model)[0]
             result.append('model')
-            result.append(model['name'])
-            result.append(self.check(model['description']))
+            result.append({self.hm.bold('Название'): model['name']})
+            result.append({self.hm.italic('Описание'): self.check(model['description'])})
             result.append(self.check(model['url'], True))
             return result
         else:
@@ -224,15 +235,8 @@ class SearchManager(Singleton):
         if len(list(cartridge)) > 0:
             cartridge = list(cartridge)[0]
             result.append('cartridge')
-            result.append(cartridge['name'])
-            devices = self.mc.find('models', {'ID_model': int(cartridge['ID_model'])})
-            end = ''
-            if len(devices) > 1:
-                for device in devices:
-                    end += device['name'] + ';'
-            else:
-                end = devices[0]['name']
-            result.append(end)
+            result.append({self.hm.bold('Название'): cartridge['name']})
+            result.append({self.hm.underline('Подходит на устройства'): self.get_devices({'ID_model': int(cartridge['ID_model'])})})
             result.append(self.check(cartridge['url'], True))
             return result
         else:
@@ -244,15 +248,8 @@ class SearchManager(Singleton):
         if len(list(item)) > 0:
             item = list(item)[0]
             result.append('evaporator')
-            result.append(item['name'])
-            devices = self.mc.find('models', {'ID_model': int(item['ID_model'])})
-            end = ''
-            if len(devices) > 1:
-                for device in devices:
-                    end += device['name'] + ';'
-            else:
-                end = devices[0]['name']
-            result.append(end)
+            result.append({self.hm.bold('Название'): item['name']})
+            result.append({self.hm.underline('Подходит на устройства'): self.get_devices({'ID_model': int(item['ID_model'])})})
             result.append(self.check(item['url'], True))
             return result
         else:
@@ -263,8 +260,22 @@ class SearchManager(Singleton):
         item = self.mc.find('liquids', query)
         if len(list(item)) > 0:
             item = list(item)[0]
-            result.append(item['name'])
-            result.append(item['strength'])
+            result.append('liquid')
+            result.append({self.hm.bold('Название'): item['name']})
+            result.append({self.hm.italic('Крепость'): item['strength']})
+            result.append(self.check(item['url'], True))
+            return result
+        else:
+            return None
+
+    def tank_card(self, query):
+        result = []
+        item = self.mc.find('tanks', query)
+        if len(list(item)) > 0:
+            item = list(item)[0]
+            result.append('tank')
+            result.append({self.hm.bold('Название'): item['name']})
+            result.append({self.hm.underline('Подходит на устройства'): self.get_devices({'ID_model': int(item['ID_model'])})})
             result.append(self.check(item['url'], True))
             return result
         else:
@@ -276,7 +287,7 @@ class SearchManager(Singleton):
         if len(list(item)) > 0:
             item = list(item)[0]
             result.append('other')
-            result.append(item['name'])
+            result.append({self.hm.bold('Название'): item['name']})
             result.append(self.check(item['url'], True))
             return result
         else:
