@@ -10,3 +10,6 @@ class HTMLManager(Singleton):
 
     def italic(self, str):
         return '<em>%s</em>' % str
+
+    def spoiler(self, str):
+        return '||str||'

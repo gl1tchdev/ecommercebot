@@ -179,7 +179,7 @@ SHEETS = [
                 'required': True
             },
             {
-                '_name': 'name',
+                '_name': 'brand_name',
                 'field_name': 'Название',
                 'type': FieldType.string,
                 'required': True

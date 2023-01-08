@@ -49,11 +49,22 @@ class SearchManager(Singleton):
             'models': self.vm.get_sheet_name_by_service_name('models'),
             'devices': 'Устройства',
             'global_search': 'Поиск',
-            'liquids': 'Жидкости',
+            'liquids': self.vm.get_sheet_name_by_service_name('liquids'),
             'cartridges': self.vm.get_sheet_name_by_service_name('cartridges'),
             'evaporators': self.vm.get_sheet_name_by_service_name('evaporators'),
             'tanks': self.vm.get_sheet_name_by_service_name('tanks'),
             'other': self.vm.get_sheet_name_by_service_name('other')
+        }
+
+        self.search_list = {
+            'manufacturers': ['start/devices/{0}', 'ID_manufacturer'],
+            'liquids_brands': ['start/liquids/{0}', 'ID_brand'],
+            'cartridges': ['start/devices/{0}/cartridges/{1}', 'ID_manufacturer', 'ID_cartridge'],
+            'liquids': ['start/liquids/{0}/{1}/{2}', 'ID_brand', 'strength', 'ID_liquid'],
+            'models': ['start/devices/{0}/models/{1}', 'ID_manufacturer', 'ID_model'],
+            'evaporators': ['start/devices/{0}/evaporators/{1}', 'ID_manufacturer', 'ID_evaporator'],
+            'tanks': ['start/devices/{0}/tanks/{1}', 'ID_manufacturer', 'ID_tank'],
+            'other': ['start/devices/{0}/other/{1}', 'ID_manufacturer', 'ID_element']
         }
 
     @fullpath
@@ -169,18 +180,52 @@ class SearchManager(Singleton):
                 result.update({info[1]: int(mpath[i])})
         return result if len(result) > 0 else None
 
+    def get_path_by_query(self, collection, query):
+        mquery = self.search_list[collection]
+        path = mquery.pop(0)
+        res = []
+        for elem in mquery:
+            if not query.get(elem) is None:
+                res.append(query.get(elem))
+        return path.format(*res)
+
+
     def to_dict(self, l, fields):
         to_d = {}
         for elem in l:
             to_d.update({elem[fields[1]]: str(elem[fields[0]])})
         return to_d
 
+    def search_by_text(self, text):
+        result = []
+        search_fields = {}
+        sheet_list = self.search_list.keys()
+        for sheet in sheet_list:
+            fields = self.vm.get_fields(sheet_name=sheet)
+            for field in fields:
+                if 'name' in field['_name']:
+                    search_fields.update({self.vm.get_service_name_by_sheet_name(sheet): field['_name']})
+        for key in search_fields:
+            items = self.mc.find(key, {search_fields[key]: text})
+            if len(items) > 0:
+                for item in items:
+                    result.append([key, item])
+        buttons = {}
+        for item in result:
+            fieldname = ''
+            for key in item[1]:
+                if 'name' in key:
+                    fieldname = item[1][key]
+            path = self.get_path_by_query(item[0], item[1])
+            buttons.update({path + '|search"' + text: fieldname})
+        return buttons
+
     def global_search(self, query):
         pass
 
     def liquids_manufacturer(self, query):
         liquids = self.mc.find('liquids_brands')
-        return self.to_dict(liquids, ['name', 'ID_brand']) if len(liquids) > 0 else None
+        return self.to_dict(liquids, ['brand_name', 'ID_brand']) if len(liquids) > 0 else None
 
     def device_manufacturer(self, query):
         manufacturers = self.mc.find('manufacturers')

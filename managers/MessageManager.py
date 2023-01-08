@@ -14,18 +14,34 @@ class MessageManager(Singleton):
         return True if nickname in config.whitelist else False
 
     def get_markup(self, dict):
-        keyboard = types.InlineKeyboardMarkup()
+        keyboard = self.get_keybard()
         for key in dict:
-            keyboard.row(types.InlineKeyboardButton(text=dict[key], callback_data=key))
+            keyboard.row(self.get_button(dict[key], key))
         return keyboard
 
     def get_start(self):
         return self.get_markup(self.sm.dynamic_search('start'))
 
-    def get_back_button(self, backpath, keyboard=False):
-        back_button = types.InlineKeyboardButton(text='Назад', callback_data=backpath)
-        if keyboard:
-            return types.InlineKeyboardMarkup().row(back_button)
+    def search(self, text):
+        search = self.sm.search_by_text(text)
+        if len(search) > 0:
+            return self.get_markup(search).row(self.get_back_button('start'))
+        else:
+            return None
+
+    def get_force_reply(self):
+        return types.ForceReply(selective=False)
+
+    def get_button(self, text, callback):
+        return types.InlineKeyboardButton(text=text, callback_data=callback)
+
+    def get_keybard(self):
+        return types.InlineKeyboardMarkup()
+
+    def get_back_button(self, backpath, need_keyboard=False):
+        back_button = self.get_button('Назад', backpath)
+        if need_keyboard:
+            return self.get_keybard().row(back_button)
         else:
             return back_button
 
@@ -41,7 +57,7 @@ class MessageManager(Singleton):
 
 
 
-    def process_card(self, info, message, backpath, obj):
+    def process_card(self, info, call, backpath, obj):
         funcs = [obj.send_photo, obj.send_message]
         last_elem = info.pop(len(info)-1)
         first_elem = info.pop(0)
@@ -51,7 +67,7 @@ class MessageManager(Singleton):
         else:
             func = funcs[1]
         params = {
-            'chat_id': message.chat.id,
+            'chat_id': call.message.chat.id,
             ('text' if func is funcs[1] else 'caption'): body,
             'reply_markup': self.get_back_button(backpath, True)
         }

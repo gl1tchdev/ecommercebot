@@ -1,4 +1,5 @@
 from pymongo import MongoClient
+from bson.objectid import ObjectId
 
 
 class monclient:
@@ -23,8 +24,21 @@ class monclient:
     def delete(self, collection, query):
         return getattr(self.client.vapeshop, collection).delete_one(query)
 
-    def find(self, collection, query={}):
+    def find(self, collection, query={}, need_id=False):
         result = list(getattr(self.client.vapeshop, collection).find(query))
+        if not need_id:
+            for elem in result:
+                elem.pop('_id')
+        return result
+
+    def get_id(self, collection, query):
+        result = list(getattr(self.client.vapeshop, collection).find(query))
+        ids = []
         for elem in result:
-            elem.pop('_id')
+            ids.append(elem['_id'])
+
+    def find_by_id(self, collection, id):
+        id = ObjectId(id)
+        result = getattr(self.client.vapeshop, collection).find({'_id': id})[0]
+        result.pop('_id')
         return result
