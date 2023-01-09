@@ -76,8 +76,11 @@ def sync():
 
         if len(delete) > 0:
            for elem in delete:
+                id = mc.get_client().find(sheet_service_name, elem, True)[0]['_id']
                 mc.delete(sheet_service_name, elem)
                 if elem.get('url'):
                     ph.delete_photo(elem['url'])
+                mc.delete('comments', {'doc_id': str(id)})
+
 
     ImgDownload.download()

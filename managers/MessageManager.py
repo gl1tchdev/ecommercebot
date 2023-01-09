@@ -2,13 +2,17 @@ from telebot import types
 from classes.Singleton import Singleton
 from managers.DbSearchManager import SearchManager
 from managers.SheetDataValidationManager import SheetManager
+from managers.HTMLManager import HTMLManager
+from clients.MongoClient import monclient
 import config
+import time
 
 
 class MessageManager(Singleton):
-
+    hm = HTMLManager()
     vm = SheetManager()
     sm = SearchManager()
+    mc = monclient()
 
     def is_in_whitelist(self, nickname):
         return True if nickname in config.whitelist else False
@@ -18,6 +22,14 @@ class MessageManager(Singleton):
         for key in dict:
             keyboard.row(self.get_button(dict[key], key))
         return keyboard
+
+    def create_comment(self, id, nickname, text):
+        t = time.strftime("%D %H:%M")
+        return self.mc.add('comments',
+                           {'doc_id': id,
+                            'time': t,
+                            'nickname': nickname,
+                            'text': text})
 
     def get_start(self):
         return self.get_markup(self.sm.dynamic_search('start'))
@@ -55,10 +67,15 @@ class MessageManager(Singleton):
             body += '\n'
         return body
 
+    def get_info_comment(self, path):
+        query = self.sm.get_query(path.split('/'))
+        result = self.sm.force_search(query)
+        return self.hm.spoiler(str(result['_id']))
 
-
-    def process_card(self, info, call, backpath, obj):
+    def process_card(self, info, call, backpath, obj, path=''):
         funcs = [obj.send_photo, obj.send_message]
+        keyboard = self.get_keybard()
+        keyboard.row(self.get_button('Комментировать', path + '/comment'), self.get_back_button(backpath))
         last_elem = info.pop(len(info)-1)
         first_elem = info.pop(0)
         body = self.make_body(info)
@@ -69,7 +86,7 @@ class MessageManager(Singleton):
         params = {
             'chat_id': call.message.chat.id,
             ('text' if func is funcs[1] else 'caption'): body,
-            'reply_markup': self.get_back_button(backpath, True)
+            'reply_markup': keyboard
         }
         if func is funcs[0]:
             params.update({'photo': open(last_elem, 'rb')})

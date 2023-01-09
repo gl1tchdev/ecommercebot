@@ -4,6 +4,7 @@ from clients.MongoClient import monclient
 from classes.Decorator import fullpath
 from managers.HTMLManager import HTMLManager
 from data.Tree import Tree
+from copy import deepcopy
 
 class SearchManager(Singleton):
     vm = SheetManager()
@@ -181,12 +182,14 @@ class SearchManager(Singleton):
         return result if len(result) > 0 else None
 
     def get_path_by_query(self, collection, query):
-        mquery = self.search_list[collection]
+        searchlist = deepcopy(self.search_list)
+        mquery = searchlist[collection]
         path = mquery.pop(0)
         res = []
         for elem in mquery:
-            if not query.get(elem) is None:
-                res.append(query.get(elem))
+            for key in query:
+                if elem == key:
+                    res.append(query[elem])
         return path.format(*res)
 
 
@@ -195,6 +198,24 @@ class SearchManager(Singleton):
         for elem in l:
             to_d.update({elem[fields[1]]: str(elem[fields[0]])})
         return to_d
+
+
+    def list_comments(self, query):
+        out = '\n'
+        id = str(self.mc.force_search_by_query(self.vm.get_list_of_service_name_of_sheet(), query)['_id'])
+        comments = self.mc.find('comments', {'doc_id': id})
+        if len(comments) == 0:
+            return None
+        for comment in comments:
+            out += '[%s] (%s): %s\n' % (comment['time'], comment['nickname'], comment['text'])
+        return out
+
+
+    def force_search(self, query):
+        c = self.vm.get_list_of_service_name_of_sheet()
+        result = self.mc.force_search_by_query(c, query)
+        return result
+
 
     def search_by_text(self, text):
         result = []
@@ -269,6 +290,9 @@ class SearchManager(Singleton):
             result.append('model')
             result.append({self.hm.bold('Название'): model['name']})
             result.append({self.hm.italic('Описание'): self.check(model['description'])})
+            comments = self.list_comments(query)
+            if not comments is None:
+                result.append({self.hm.underline('Комментарии'): comments})
             result.append(self.check(model['url'], True))
             return result
         else:
@@ -282,6 +306,9 @@ class SearchManager(Singleton):
             result.append('cartridge')
             result.append({self.hm.bold('Название'): cartridge['name']})
             result.append({self.hm.underline('Подходит на устройства'): self.get_devices({'ID_model': int(cartridge['ID_model'])})})
+            comments = self.list_comments(query)
+            if not comments is None:
+                result.append({self.hm.underline('Комментарии'): comments})
             result.append(self.check(cartridge['url'], True))
             return result
         else:
@@ -295,6 +322,9 @@ class SearchManager(Singleton):
             result.append('evaporator')
             result.append({self.hm.bold('Название'): item['name']})
             result.append({self.hm.underline('Подходит на устройства'): self.get_devices({'ID_model': int(item['ID_model'])})})
+            comments = self.list_comments(query)
+            if not comments is None:
+                result.append({self.hm.underline('Комментарии'): comments})
             result.append(self.check(item['url'], True))
             return result
         else:
@@ -308,6 +338,9 @@ class SearchManager(Singleton):
             result.append('liquid')
             result.append({self.hm.bold('Название'): item['name']})
             result.append({self.hm.italic('Крепость'): item['strength']})
+            comments = self.list_comments(query)
+            if not comments is None:
+                result.append({self.hm.underline('Комментарии'): comments})
             result.append(self.check(item['url'], True))
             return result
         else:
@@ -321,6 +354,9 @@ class SearchManager(Singleton):
             result.append('tank')
             result.append({self.hm.bold('Название'): item['name']})
             result.append({self.hm.underline('Подходит на устройства'): self.get_devices({'ID_model': int(item['ID_model'])})})
+            comments = self.list_comments(query)
+            if not comments is None:
+                result.append({self.hm.underline('Комментарии'): comments})
             result.append(self.check(item['url'], True))
             return result
         else:
@@ -333,6 +369,9 @@ class SearchManager(Singleton):
             item = list(item)[0]
             result.append('other')
             result.append({self.hm.bold('Название'): item['name']})
+            comments = self.list_comments(query)
+            if not comments is None:
+                result.append({self.hm.underline('Комментарии'): comments})
             result.append(self.check(item['url'], True))
             return result
         else:

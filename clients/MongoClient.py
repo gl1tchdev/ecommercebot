@@ -37,6 +37,28 @@ class monclient:
         for elem in result:
             ids.append(elem['_id'])
 
+    def force_search_by_query(self, collections, query, return_collection=False):
+        for collection in collections:
+            result = list(getattr(self.client.vapeshop, collection).find(query))
+            if len(result) == 0:
+                continue
+            else:
+                if return_collection:
+                    return [collection, result[0]]
+                else:
+                    return result[0]
+
+    def force_search_by_id(self, collections, id, return_collection=False):
+        for collection in collections:
+            result = list(getattr(self.client.vapeshop, collection).find({'_id': ObjectId(id)}))
+            if len(result) == 0:
+                continue
+            else:
+                if return_collection:
+                    return [collection, result[0]]
+                else:
+                    return result[0]
+
     def find_by_id(self, collection, id):
         id = ObjectId(id)
         result = getattr(self.client.vapeshop, collection).find({'_id': id})[0]

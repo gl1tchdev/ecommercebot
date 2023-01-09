@@ -35,6 +35,12 @@ class SheetManager(Singleton):
             sheets_names.append(sheet['sheet_name'])
         return sheets_names
 
+    def get_list_of_service_name_of_sheet(self):
+        sheets_names = []
+        for sheet in self.SHEETS:
+            sheets_names.append(sheet['_name'])
+        return sheets_names
+
     def get_dict_of_sheet_names(self):
         dict = {}
         for sheet in self.SHEETS:

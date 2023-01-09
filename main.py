@@ -5,7 +5,6 @@ import config
 
 bot = telebot.TeleBot(config.token, parse_mode='HTML')
 mm = MessageManager()
-fm = FunctionsManager()
 default_reply = lambda message, markup: bot.send_message(message.chat.id, 'Используй меню для навигации', reply_markup=markup)
 simple_reply = lambda message, text: bot.send_message(message.chat.id, text)
 optional_reply = lambda message, text, markup: bot.send_message(message.chat.id, text, reply_markup=markup)
@@ -27,6 +26,15 @@ def search_func(message):
         return
     optional_reply(message, 'Результаты поиска:', result)
 
+@bot.message_handler(content_types=['text'], func=lambda message: message.reply_to_message and 'Напиши комментарий:' in message.reply_to_message.text)
+def comment_func(message):
+    if not mm.is_in_whitelist(message.from_user.username):
+        return
+    text = message.text
+    item_id = message.reply_to_message.text.split('\n')[0]
+    mm.create_comment(item_id, message.from_user.username, text)
+    optional_reply(message, 'Вы оставили комментарий', mm.get_start())
+
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('search'))
 def search_callback(call):
@@ -47,7 +55,7 @@ def every(message):
     default_reply(message, mm.get_start())
 
 
-@bot.callback_query_handler(func=lambda call: not call.data == 'start/global_search')
+@bot.callback_query_handler(func=lambda call: not call.data == 'start/global_search' and not call.data.endswith('comment'))
 def callback_worker(call):
     if not mm.is_in_whitelist(call.message.chat.username):
         return
@@ -68,9 +76,9 @@ def callback_worker(call):
         default_reply(call.message, keyboard)
     if type(search) is list:
         if not s_search:
-            result = mm.process_card(search, call, backpath, bot)
+            result = mm.process_card(search, call, backpath, bot, path)
         else:
-            result = mm.process_card(search, call, s_search, bot)
+            result = mm.process_card(search, call, s_search, bot, path)
         result[0](**result[1])
 
     if search is None:
@@ -81,8 +89,21 @@ def callback_worker(call):
 
 @bot.callback_query_handler(func=lambda call: call.data == 'start/global_search')
 def search(call):
+    if not mm.is_in_whitelist(call.message.chat.username):
+        return
     force = mm.get_force_reply()
     optional_reply(call.message, 'Напиши текст для поиска:', force)
+    bot.answer_callback_query(callback_query_id=call.id)
+
+@bot.callback_query_handler(func=lambda call: call.data.endswith('comment'))
+def comment(call):
+    path = call.data
+    backpathm = path.split('/')
+    backpathm.pop(len(backpathm) - 1)
+    path = '/'.join(backpathm)
+    info = mm.get_info_comment(path)
+    text = info + '\n' + 'Напиши комментарий:'
+    optional_reply(call.message, text, mm.get_force_reply())
     bot.answer_callback_query(callback_query_id=call.id)
 
 bot.infinity_polling()

@@ -12,4 +12,4 @@ class HTMLManager(Singleton):
         return '<em>%s</em>' % str
 
     def spoiler(self, str):
-        return '||str||'
+        return '<span class="tg-spoiler">%s</span>' % str
