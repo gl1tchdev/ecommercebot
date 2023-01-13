@@ -1,26 +1,28 @@
 from classes.Singleton import Singleton
 from clients.MongoClient import monclient
+from classes.UserRole import UserRole
 import time
 from copy import deepcopy
 
 class UserDataManager(Singleton):
     mc = monclient()
     _structure = {
-        'user': ['nickname', 'registration_time', 'last_online'],
+        'user': ['nickname', 'registration_time', 'last_online', 'role'],
         'user_data': ['nickname', 'last_message']
     }
     def get_structure(self):
         return deepcopy(self._structure)
 
     def get_time(self):
-        return time.strftime("%D %H:%M")
+        return time.strftime("%d/%m/%y %H:%M")
 
-    def register_user(self, nickname):
+    def register_user(self, nickname, role=UserRole.STUFF):
         structure = self.get_structure()['user']
         return self.mc.add('user', {
             structure[0]: nickname,
             structure[1]: self.get_time(),
             structure[2]: self.get_time(),
+            structure[3]: role.value
         })
 
     def update_online(self, nickname):
@@ -73,3 +75,11 @@ class UserDataManager(Singleton):
         except:
             pass
         return nickname
+
+    def add_to_whitelist(self, nickname):
+        return self.mc.add('whitelist', {'nickname': nickname})
+
+    def set_role(self, nickname, role):
+        if not self.is_registered(nickname):
+            self.register_user(nickname)
+        return self.mc.update_one('user', {'nickname': nickname}, {'role': role})

@@ -1,5 +1,6 @@
 import telebot
 from managers.MessageManager import MessageManager
+from decorators.Access import *
 from managers.UserDataManager import UserDataManager
 from telebot.apihelper import ApiTelegramException
 import config
@@ -8,8 +9,11 @@ bot = telebot.TeleBot(config.token, parse_mode='HTML')
 mm = MessageManager()
 udm = UserDataManager()
 default_message = 'Используйте меню для навигации'
-#default_reply = lambda message, markup: bot.send_message(message.chat.id, 'Используй меню для навигации', reply_markup=markup)
-#optional_reply = lambda message, text, markup: bot.send_message(message.chat.id, text, reply_markup=markup)
+commands = [
+    'whitelist',
+    'setrole'
+]
+is_command = lambda text: True if (text.startswith('/') and text.split(' ')[0][1:] in commands) else False
 
 def simple_reply(message, text):
     nickname = udm.get_nickname_by_message(message)
@@ -56,16 +60,15 @@ def optional_reply(message, text, markup):
         udm.set_last_message(nickname, result.id)
 
 
+
 @bot.message_handler(commands=['start'])
+@whitelist
 def send_welcome(message):
-    if not mm.is_in_whitelist(message.from_user.username):
-        return
     default_reply(message, mm.get_start())
 
 @bot.message_handler(content_types=['text'], func=lambda message: message.reply_to_message and message.reply_to_message.text == 'Напиши текст для поиска:')
+@whitelist
 def search_func(message):
-    if not mm.is_in_whitelist(message.from_user.username):
-        return
     squery = message.text
     result = mm.search(squery)
     if result is None:
@@ -74,9 +77,8 @@ def search_func(message):
     optional_reply(message, 'Результаты поиска:', result)
 
 @bot.message_handler(content_types=['text'], func=lambda message: message.reply_to_message and 'Напиши комментарий:' in message.reply_to_message.text)
+@whitelist
 def comment_func(message):
-    if not mm.is_in_whitelist(message.from_user.username):
-        return
     text = message.text
     item_id = message.reply_to_message.text.split('\n')[0]
     mm.create_comment(item_id, message.from_user.username, text)
@@ -85,9 +87,8 @@ def comment_func(message):
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('search'))
+@whitelist_query
 def search_callback(call):
-    if not mm.is_in_whitelist(call.message.chat.username):
-        return
     query = call.data.split('"')
     result = mm.search(query[1])
     if result is None:
@@ -96,17 +97,16 @@ def search_callback(call):
     optional_reply(call.message, 'Результаты поиска:', result)
     bot.answer_callback_query(callback_query_id=call.id)
 
-@bot.message_handler(content_types=['text'], func=lambda message: not message.reply_to_message)
+
+@bot.message_handler(content_types=['text'], func=lambda message: not message.reply_to_message and not is_command(message.text))
+@whitelist
 def every(message):
-    if not mm.is_in_whitelist(message.from_user.username):
-        return
     default_reply(message, mm.get_start())
 
 
 @bot.callback_query_handler(func=lambda call: not call.data == 'start/global_search' and not call.data.endswith('comment'))
+@whitelist_query
 def callback_worker(call):
-    if not mm.is_in_whitelist(call.message.chat.username):
-        return
     path = call.data
     if path.startswith('cache:'):
         tpath = path.split(':')
@@ -143,9 +143,8 @@ def callback_worker(call):
         pass
 
 @bot.callback_query_handler(func=lambda call: call.data == 'start/global_search')
+@whitelist_query
 def search(call):
-    if not mm.is_in_whitelist(call.message.chat.username):
-        return
     force = mm.get_force_reply()
     optional_reply(call.message, 'Напиши текст для поиска:', force)
     try:
@@ -154,6 +153,7 @@ def search(call):
         pass
 
 @bot.callback_query_handler(func=lambda call: call.data.endswith('comment'))
+@whitelist_query
 def comment(call):
     path = call.data
     backpathm = path.split('/')
@@ -163,5 +163,27 @@ def comment(call):
     text = info + '\n' + 'Напиши комментарий:'
     optional_reply(call.message, text, mm.get_force_reply())
     bot.answer_callback_query(callback_query_id=call.id)
+
+@bot.message_handler(commands=['whitelist'])
+@admin
+def whitelist(message):
+    args = message.text.split(' ')
+    args.remove(args[0])
+    nickname = args[0]
+    udm.add_to_whitelist(nickname)
+    simple_reply(message, 'Добавлено')
+
+@bot.message_handler(commands=['setrole'])
+@admin
+def set_role(message):
+    args = message.text.split(' ')
+    args.remove(args[0])
+    nickname = args[0]
+    role = args[1]
+    if role not in [e.value for e in UserRole]:
+        return
+    udm.set_role(nickname, role)
+    simple_reply(message, 'Обновлено')
+
 
 bot.infinity_polling()
