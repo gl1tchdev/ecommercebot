@@ -5,7 +5,6 @@ class Tree(Singleton):
     def __init__(self):
         self._TEMP = {
             'start': {
-                'global_search': '$search',
                 'devices':
                     {
                         '$device_manufacturer':
@@ -45,7 +44,8 @@ class Tree(Singleton):
                                         '$liquids_medium': '$liquid_card'
                                     }
                             }
-                    }
+                    },
+                'global_search': '$search'
             }
         }
     def _get(self):

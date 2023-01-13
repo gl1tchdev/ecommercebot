@@ -24,7 +24,7 @@ class MessageManager(Singleton):
         return keyboard
 
     def create_comment(self, id, nickname, text):
-        t = time.strftime("%D %H:%M")
+        t = time.strftime("%d/%m/%Y %H:%M")
         return self.mc.add('comments',
                            {'doc_id': id,
                             'time': t,
@@ -45,6 +45,11 @@ class MessageManager(Singleton):
         return types.ForceReply(selective=False)
 
     def get_button(self, text, callback):
+        if len(callback.encode('utf-8')) > 63:
+            if self.mc.is_cached(callback):
+                callback = 'cache:' + self.mc.get_cache(value=callback)
+            else:
+                callback = 'cache:' + self.mc.cache_value(callback)
         return types.InlineKeyboardButton(text=text, callback_data=callback)
 
     def get_keybard(self):

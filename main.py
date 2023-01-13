@@ -1,13 +1,60 @@
 import telebot
 from managers.MessageManager import MessageManager
-from managers.FunctionsManager import FunctionsManager
+from managers.UserDataManager import UserDataManager
+from telebot.apihelper import ApiTelegramException
 import config
 
 bot = telebot.TeleBot(config.token, parse_mode='HTML')
 mm = MessageManager()
-default_reply = lambda message, markup: bot.send_message(message.chat.id, 'Используй меню для навигации', reply_markup=markup)
-simple_reply = lambda message, text: bot.send_message(message.chat.id, text)
-optional_reply = lambda message, text, markup: bot.send_message(message.chat.id, text, reply_markup=markup)
+udm = UserDataManager()
+default_message = 'Используйте меню для навигации'
+#default_reply = lambda message, markup: bot.send_message(message.chat.id, 'Используй меню для навигации', reply_markup=markup)
+#optional_reply = lambda message, text, markup: bot.send_message(message.chat.id, text, reply_markup=markup)
+
+def simple_reply(message, text):
+    nickname = udm.get_nickname_by_message(message)
+    if not udm.is_registered(nickname):
+        udm.register_user(nickname)
+    if not udm.has_last_message(nickname):
+        udm.add_data(nickname, message.id)
+    result = bot.send_message(message.chat.id, text)
+    udm.set_last_message(nickname, result.id)
+
+
+def default_reply(message, markup):
+    global default_message
+    nickname = udm.get_nickname_by_message(message)
+    if not udm.is_registered(nickname):
+        udm.register_user(nickname)
+    if not udm.has_last_message(nickname):
+        udm.add_data(nickname, message.id)
+    last_message = udm.get_last_message(nickname)
+    try:
+        bot.edit_message_reply_markup(message.chat.id, last_message, reply_markup=markup)
+    except:
+        result = bot.send_message(message.chat.id, default_message, reply_markup=markup)
+        udm.set_last_message(nickname, result.id)
+
+def optional_reply(message, text, markup):
+    global default_message
+    nickname = udm.get_nickname_by_message(message)
+    if not udm.is_registered(nickname):
+        udm.register_user(nickname)
+    if not udm.has_last_message(nickname):
+        udm.add_data(nickname, message.id)
+    last_message = udm.get_last_message(nickname)
+    try:
+        bot.edit_message_reply_markup(message.chat.id, last_message, reply_markup=markup)
+    except ApiTelegramException:
+        result = bot.send_message(message.chat.id, text, reply_markup=markup)
+        udm.set_last_message(nickname, result.id)
+        return
+    try:
+        bot.edit_message_text(text, message.chat.id, message.id)
+    except:
+        result = bot.send_message(message.chat.id, text, reply_markup=markup)
+        udm.set_last_message(nickname, result.id)
+
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
@@ -33,7 +80,8 @@ def comment_func(message):
     text = message.text
     item_id = message.reply_to_message.text.split('\n')[0]
     mm.create_comment(item_id, message.from_user.username, text)
-    optional_reply(message, 'Вы оставили комментарий', mm.get_start())
+    simple_reply(message, 'Вы успешно оставили комментарий')
+    default_reply(message, mm.get_start())
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('search'))
@@ -60,6 +108,10 @@ def callback_worker(call):
     if not mm.is_in_whitelist(call.message.chat.username):
         return
     path = call.data
+    if path.startswith('cache:'):
+        tpath = path.split(':')
+        cpath = tpath[1]
+        path = mm.mc.get_cache(key=cpath)
     s_search = ''
     if '|' in path:
         temp = path.split('|')
@@ -85,7 +137,10 @@ def callback_worker(call):
         bot.answer_callback_query(callback_query_id=call.id, text='Ничего не найдено')
         default_reply(call.message, mm.get_start())
         return
-    bot.answer_callback_query(callback_query_id=call.id)
+    try:
+        bot.answer_callback_query(callback_query_id=call.id)
+    except:
+        pass
 
 @bot.callback_query_handler(func=lambda call: call.data == 'start/global_search')
 def search(call):
@@ -93,7 +148,10 @@ def search(call):
         return
     force = mm.get_force_reply()
     optional_reply(call.message, 'Напиши текст для поиска:', force)
-    bot.answer_callback_query(callback_query_id=call.id)
+    try:
+        bot.answer_callback_query(callback_query_id=call.id)
+    except:
+        pass
 
 @bot.callback_query_handler(func=lambda call: call.data.endswith('comment'))
 def comment(call):

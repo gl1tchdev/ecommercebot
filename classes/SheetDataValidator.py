@@ -80,6 +80,11 @@ class Validator(Singleton):
                     continue
                 if not self.ph.is_img_valid(elem):
                     self.failure('Ссылка на изображение некорректна')
+            elif fieldtype == FieldType.string:
+                if not required and not elem:
+                    continue
+                if any(x in ['/', '|', '"'] for x in elem):
+                    self.failure('Поле \"%s\" не должно содержать символов: /, |, \"' % fields['field_name'])
             else:
                 continue
         if self.get_result() and not self.message:

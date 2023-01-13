@@ -1,5 +1,7 @@
 from pymongo import MongoClient
 from bson.objectid import ObjectId
+from random import choices
+import string
 
 
 class monclient:
@@ -16,10 +18,10 @@ class monclient:
         return getattr(self.client.vapeshop, collection).delete_one(query)
 
     def update_one(self, collection, query, update):
-        return getattr(self.client.vapeshop, collection).update_one(query, update)
+        return getattr(self.client.vapeshop, collection).update_one(query, {"$set": update})
 
     def update_many(self, collection, query, update):
-        return getattr(self.client.vapeshop, collection).update_many(query, update)
+        return getattr(self.client.vapeshop, collection).update_many(query, {"$set" :update})
 
     def delete(self, collection, query):
         return getattr(self.client.vapeshop, collection).delete_one(query)
@@ -64,3 +66,23 @@ class monclient:
         result = getattr(self.client.vapeshop, collection).find({'_id': id})[0]
         result.pop('_id')
         return result
+
+    def cache_value(self, value):
+        key = ''.join(choices(string.ascii_lowercase+string.digits, k=10))
+        self.add('cache', {'key': key, 'value': value})
+        return key
+
+    def get_cache(self, **kwargs):
+        result = 0
+        if not kwargs.get('key') is None:
+            search_key = kwargs['key']
+            result = list(getattr(self.client.vapeshop, 'cache').find({'key': search_key}))
+            return result[0]['value'] if len(result) > 0 else None
+        if not kwargs.get('value') is None:
+            search_value = kwargs['value']
+            result = list(getattr(self.client.vapeshop, 'cache').find({'value': search_value}))
+            return result[0]['key'] if len(result) > 0 else None
+
+    def is_cached(self, value):
+        result = list(getattr(self.client.vapeshop, 'cache').find({'value': value}))
+        return True if len(result) > 0 else False
