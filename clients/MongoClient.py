@@ -1,12 +1,14 @@
-from pymongo import MongoClient
+import pymongo
 from bson.objectid import ObjectId
 from random import choices
+from managers.SheetDataValidationManager import SheetManager
 import string
 
 
 class monclient:
     def __init__(self):
-        self.client = MongoClient()
+        self.client = pymongo.MongoClient()
+        self.vm = SheetManager()
 
     def get_сlient(self):
         return self.client
@@ -27,7 +29,10 @@ class monclient:
         return getattr(self.client.vapeshop, collection).delete_one(query)
 
     def find(self, collection, query={}, need_id=False):
-        result = list(getattr(self.client.vapeshop, collection).find(query))
+        result = getattr(self.client.vapeshop, collection).find(query).sort('_id', 1)
+        if collection in self.vm.get_list_of_service_name_of_sheet():
+            result.sort(self.vm.get_fields(_name=collection)[0]['_name'], 1)
+        result = list(result)
         if not need_id:
             for elem in result:
                 elem.pop('_id')

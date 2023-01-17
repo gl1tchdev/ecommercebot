@@ -8,7 +8,8 @@ class UserDataManager(Singleton):
     mc = monclient()
     _structure = {
         'user': ['nickname', 'registration_time', 'last_online', 'role'],
-        'user_data': ['nickname', 'last_message']
+        'user_data': ['nickname', 'last_message'],
+        'messages': ['nickname', 'chat_id', 'user_id']
     }
     def get_structure(self):
         return deepcopy(self._structure)
@@ -16,7 +17,7 @@ class UserDataManager(Singleton):
     def get_time(self):
         return time.strftime("%d/%m/%y %H:%M")
 
-    def register_user(self, nickname, role=UserRole.STUFF):
+    def register_user(self, nickname, role=UserRole.STAFF):
         structure = self.get_structure()['user']
         return self.mc.add('user', {
             structure[0]: nickname,

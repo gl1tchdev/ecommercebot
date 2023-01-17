@@ -4,7 +4,6 @@ from managers.DbSearchManager import SearchManager
 from managers.SheetDataValidationManager import SheetManager
 from managers.HTMLManager import HTMLManager
 from clients.MongoClient import monclient
-import config
 import time
 
 
@@ -13,9 +12,6 @@ class MessageManager(Singleton):
     vm = SheetManager()
     sm = SearchManager()
     mc = monclient()
-
-    def is_in_whitelist(self, nickname):
-        return True if nickname in config.whitelist else False
 
     def get_markup(self, dict):
         keyboard = self.get_keybard()
@@ -96,3 +92,14 @@ class MessageManager(Singleton):
         if func is funcs[0]:
             params.update({'photo': open(last_elem, 'rb')})
         return [func, params]
+
+    def delete(self, bot, chat_id, message_id):
+        try:
+            bot.delete_message(chat_id=chat_id, message_id=message_id)
+        except:
+            pass
+
+    def force_clear(self, bot, chat_id, last_message, count):
+        num = last_message
+        for i in range(num+count):
+            self.delete(bot, chat_id=chat_id, message_id=last_message+i)

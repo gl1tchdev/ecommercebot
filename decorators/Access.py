@@ -32,14 +32,14 @@ def admin(func):
     return wrapper
 
 @lru_cache
-def stuff(func):
+def staff(func):
     def wrapper(message):
         user = mc.find('user', {'nickname': message.from_user.username})
         if len(user) == 0:
             return
         if len(user) == 1:
             role = user[0]['role']
-            if role == UserRole.STUFF.value:
+            if role == UserRole.STAFF.value:
                 return func(message)
     return wrapper
 

@@ -3,17 +3,15 @@ from managers.MessageManager import MessageManager
 from decorators.Access import *
 from managers.UserDataManager import UserDataManager
 from telebot.apihelper import ApiTelegramException
+from telebot.util import *
 import config
 
 bot = telebot.TeleBot(config.token, parse_mode='HTML')
 mm = MessageManager()
 udm = UserDataManager()
 default_message = 'Используйте меню для навигации'
-commands = [
-    'whitelist',
-    'setrole'
-]
-is_command = lambda text: True if (text.startswith('/') and text.split(' ')[0][1:] in commands) else False
+
+
 
 def simple_reply(message, text):
     nickname = udm.get_nickname_by_message(message)
@@ -61,12 +59,15 @@ def optional_reply(message, text, markup):
 
 
 
-@bot.message_handler(commands=['start'])
+
+
+@bot.message_handler(commands=['start', 'menu'])
 @whitelist
 def send_welcome(message):
     default_reply(message, mm.get_start())
 
-@bot.message_handler(content_types=['text'], func=lambda message: message.reply_to_message and message.reply_to_message.text == 'Напиши текст для поиска:')
+
+@bot.message_handler(content_types=['text'], func=lambda message: message.reply_to_message and message.reply_to_message.text == 'Напишите текст для поиска:')
 @whitelist
 def search_func(message):
     squery = message.text
@@ -76,7 +77,7 @@ def search_func(message):
         return
     optional_reply(message, 'Результаты поиска:', result)
 
-@bot.message_handler(content_types=['text'], func=lambda message: message.reply_to_message and 'Напиши комментарий:' in message.reply_to_message.text)
+@bot.message_handler(content_types=['text'], func=lambda message: message.reply_to_message and 'Напишите комментарий:' in message.reply_to_message.text)
 @whitelist
 def comment_func(message):
     text = message.text
@@ -126,12 +127,14 @@ def callback_worker(call):
         if path != 'start':
             keyboard.row(mm.get_back_button(backpath))
         default_reply(call.message, keyboard)
+
     if type(search) is list:
         if not s_search:
             result = mm.process_card(search, call, backpath, bot, path)
         else:
             result = mm.process_card(search, call, s_search, bot, path)
         result[0](**result[1])
+        #mm.force_clear(bot, call.message.chat.id, udm.get_last_message(call.message.chat.username), len(result[1]['reply_markup'].to_dict()['inline_keyboard']))
 
     if search is None:
         bot.answer_callback_query(callback_query_id=call.id, text='Ничего не найдено')
@@ -146,7 +149,7 @@ def callback_worker(call):
 @whitelist_query
 def search(call):
     force = mm.get_force_reply()
-    optional_reply(call.message, 'Напиши текст для поиска:', force)
+    optional_reply(call.message, 'Напишите текст для поиска:', force)
     try:
         bot.answer_callback_query(callback_query_id=call.id)
     except:
@@ -160,15 +163,14 @@ def comment(call):
     backpathm.pop(len(backpathm) - 1)
     path = '/'.join(backpathm)
     info = mm.get_info_comment(path)
-    text = info + '\n' + 'Напиши комментарий:'
+    text = info + '\n' + 'Напишите комментарий:'
     optional_reply(call.message, text, mm.get_force_reply())
     bot.answer_callback_query(callback_query_id=call.id)
 
 @bot.message_handler(commands=['whitelist'])
 @admin
 def whitelist(message):
-    args = message.text.split(' ')
-    args.remove(args[0])
+    args = extract_arguments(message.text)
     nickname = args[0]
     udm.add_to_whitelist(nickname)
     simple_reply(message, 'Добавлено')
@@ -176,8 +178,7 @@ def whitelist(message):
 @bot.message_handler(commands=['setrole'])
 @admin
 def set_role(message):
-    args = message.text.split(' ')
-    args.remove(args[0])
+    args = extract_arguments(message.text)
     nickname = args[0]
     role = args[1]
     if role not in [e.value for e in UserRole]:
