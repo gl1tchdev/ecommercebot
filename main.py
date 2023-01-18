@@ -1,13 +1,11 @@
-import telebot
-from managers.MessageManager import MessageManager
-from decorators.Access import *
-from managers.UserDataManager import UserDataManager
 from telebot.apihelper import ApiTelegramException
-from telebot.util import *
-import config
+from telebot.util import extract_arguments, is_command
+from managers.MessageManager import MessageManager
+from managers.UserDataManager import UserDataManager
+from decorators.Access import *
 
-bot = telebot.TeleBot(config.token, parse_mode='HTML')
 mm = MessageManager()
+bot = mm.get_bot()
 udm = UserDataManager()
 default_message = 'Используйте меню для навигации'
 
@@ -26,8 +24,6 @@ def simple_reply(message, text):
 def default_reply(message, markup):
     global default_message
     nickname = udm.get_nickname_by_message(message)
-    if not udm.is_registered(nickname):
-        udm.register_user(nickname)
     if not udm.has_last_message(nickname):
         udm.add_data(nickname, message.id)
     last_message = udm.get_last_message(nickname)
@@ -64,7 +60,9 @@ def optional_reply(message, text, markup):
 @bot.message_handler(commands=['start', 'menu'])
 @whitelist
 def send_welcome(message):
+
     default_reply(message, mm.get_start())
+
 
 
 @bot.message_handler(content_types=['text'], func=lambda message: message.reply_to_message and message.reply_to_message.text == 'Напишите текст для поиска:')
@@ -110,17 +108,9 @@ def every(message):
 def callback_worker(call):
     path = call.data
     if path.startswith('cache:'):
-        tpath = path.split(':')
-        cpath = tpath[1]
-        path = mm.mc.get_cache(key=cpath)
-    s_search = ''
-    if '|' in path:
-        temp = path.split('|')
-        path = temp[0]
-        s_search = temp[1]
-    backpathm = path.split('/')
-    backpathm.pop(len(backpathm) - 1)
-    backpath = '/'.join(backpathm)
+        tpath = path.split(':')[1]
+        path = mm.mc.get_cache(key=tpath)
+    backpath = mm.get_backpath(path)
     search = mm.sm.dynamic_search(path)
     if type(search) is dict:
         keyboard = mm.get_markup(search)
@@ -129,12 +119,7 @@ def callback_worker(call):
         default_reply(call.message, keyboard)
 
     if type(search) is list:
-        if not s_search:
-            result = mm.process_card(search, call, backpath, bot, path)
-        else:
-            result = mm.process_card(search, call, s_search, bot, path)
-        result[0](**result[1])
-        #mm.force_clear(bot, call.message.chat.id, udm.get_last_message(call.message.chat.username), len(result[1]['reply_markup'].to_dict()['inline_keyboard']))
+        mm.process_card(search, call, path)
 
     if search is None:
         bot.answer_callback_query(callback_query_id=call.id, text='Ничего не найдено')
@@ -158,10 +143,7 @@ def search(call):
 @bot.callback_query_handler(func=lambda call: call.data.endswith('comment'))
 @whitelist_query
 def comment(call):
-    path = call.data
-    backpathm = path.split('/')
-    backpathm.pop(len(backpathm) - 1)
-    path = '/'.join(backpathm)
+    path = mm.get_backpath(call.data)
     info = mm.get_info_comment(path)
     text = info + '\n' + 'Напишите комментарий:'
     optional_reply(call.message, text, mm.get_force_reply())

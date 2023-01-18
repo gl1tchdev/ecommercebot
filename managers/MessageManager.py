@@ -1,17 +1,29 @@
-from telebot import types
+from telebot import types, TeleBot
 from classes.Singleton import Singleton
 from managers.DbSearchManager import SearchManager
 from managers.SheetDataValidationManager import SheetManager
 from managers.HTMLManager import HTMLManager
+from managers.UserDataManager import UserDataManager
 from clients.MongoClient import monclient
-import time
+import time, config
 
 
 class MessageManager(Singleton):
-    hm = HTMLManager()
-    vm = SheetManager()
-    sm = SearchManager()
-    mc = monclient()
+    def __init__(self):
+        self.hm = HTMLManager()
+        self.vm = SheetManager()
+        self.sm = SearchManager()
+        self.mc = monclient()
+        self.udm = UserDataManager()
+        self.bot = TeleBot(config.token, parse_mode='HTML')
+
+    def get_bot(self):
+        return self.bot
+
+    def get_backpath(self, path):
+        backpathm = path.split('/')
+        backpathm.pop(len(backpathm) - 1)
+        return '/'.join(backpathm)
 
     def get_markup(self, dict):
         keyboard = self.get_keybard()
@@ -73,10 +85,10 @@ class MessageManager(Singleton):
         result = self.sm.force_search(query)
         return self.hm.spoiler(str(result['_id']))
 
-    def process_card(self, info, call, backpath, obj, path=''):
-        funcs = [obj.send_photo, obj.send_message]
+    def process_card(self, info, call, path):
+        funcs = [self.bot.send_photo, self.bot.send_message]
         keyboard = self.get_keybard()
-        keyboard.row(self.get_button('Комментировать', path + '/comment'), self.get_back_button(backpath))
+        keyboard.row(self.get_button('Комментировать', path + '/comment'))
         last_elem = info.pop(len(info)-1)
         first_elem = info.pop(0)
         body = self.make_body(info)
@@ -91,15 +103,10 @@ class MessageManager(Singleton):
         }
         if func is funcs[0]:
             params.update({'photo': open(last_elem, 'rb')})
-        return [func, params]
+        return func(**params)
 
     def delete(self, bot, chat_id, message_id):
         try:
             bot.delete_message(chat_id=chat_id, message_id=message_id)
         except:
             pass
-
-    def force_clear(self, bot, chat_id, last_message, count):
-        num = last_message
-        for i in range(num+count):
-            self.delete(bot, chat_id=chat_id, message_id=last_message+i)

@@ -7,8 +7,7 @@ from copy import deepcopy
 class UserDataManager(Singleton):
     mc = monclient()
     _structure = {
-        'user': ['nickname', 'registration_time', 'last_online', 'role'],
-        'user_data': ['nickname', 'last_message'],
+        'user': ['nickname', 'registration_time', 'last_online', 'menu', 'card', 'role'],
         'messages': ['nickname', 'chat_id', 'user_id']
     }
     def get_structure(self):
@@ -17,13 +16,15 @@ class UserDataManager(Singleton):
     def get_time(self):
         return time.strftime("%d/%m/%y %H:%M")
 
-    def register_user(self, nickname, role=UserRole.STAFF):
+    def register_user(self, nickname, id=0, card=0,role=UserRole.STAFF):
         structure = self.get_structure()['user']
         return self.mc.add('user', {
             structure[0]: nickname,
             structure[1]: self.get_time(),
             structure[2]: self.get_time(),
-            structure[3]: role.value
+            structure[3]: card,
+            structure[4]: id,
+            structure[5]: role.value
         })
 
     def update_online(self, nickname):
@@ -81,6 +82,4 @@ class UserDataManager(Singleton):
         return self.mc.add('whitelist', {'nickname': nickname})
 
     def set_role(self, nickname, role):
-        if not self.is_registered(nickname):
-            self.register_user(nickname)
         return self.mc.update_one('user', {'nickname': nickname}, {'role': role})

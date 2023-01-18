@@ -239,7 +239,7 @@ class SearchManager(Singleton):
                 if 'name' in key:
                     fieldname = item[1][key]
             path = self.get_path_by_query(item[0], item[1])
-            buttons.update({path + '|search"' + text: fieldname})
+            buttons.update({path: fieldname})
         return buttons
 
     def global_search(self, query):
