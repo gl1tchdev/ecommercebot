@@ -3,7 +3,6 @@ from managers.SheetDataValidationManager import SheetManager
 from clients.MongoClient import monclient
 from decorators.DbSearch import fullpath
 from managers.HTMLManager import HTMLManager
-from functools import lru_cache
 from data.Tree import Tree
 from copy import deepcopy
 
@@ -25,6 +24,7 @@ class SearchManager(Singleton):
             'liquids_hard': self.liquids_hard,
             'liquids_medium': self.liquids_medium,
         }
+
         self.endpoints = {
             'search': self.global_search,
             'model_card': self.model_card,
@@ -55,7 +55,8 @@ class SearchManager(Singleton):
             'cartridges': self.vm.get_sheet_name_by_service_name('cartridges'),
             'evaporators': self.vm.get_sheet_name_by_service_name('evaporators'),
             'tanks': self.vm.get_sheet_name_by_service_name('tanks'),
-            'other': self.vm.get_sheet_name_by_service_name('other')
+            'other': self.vm.get_sheet_name_by_service_name('other'),
+            'manufacturers': self.vm.get_sheet_name_by_service_name('manufacturers')
         }
 
         self.search_list = {
@@ -125,6 +126,9 @@ class SearchManager(Singleton):
         else:
             csearch = word
         return csearch
+
+    def get_search_list(self):
+        return list(self.search_list.keys())
 
     def filter_categories(self, prev_last, last, l, d = False):
         c = self.get_search_field(prev_last)
@@ -239,7 +243,7 @@ class SearchManager(Singleton):
                 if 'name' in key:
                     fieldname = item[1][key]
             path = self.get_path_by_query(item[0], item[1])
-            buttons.update({path: fieldname})
+            buttons.update({path: ('[%s] ' % self.translate(item[0]))+fieldname})
         return buttons
 
     def global_search(self, query):

@@ -1,4 +1,5 @@
-from telebot.apihelper import ApiTelegramException
+import time
+from threading import Thread
 from telebot.util import extract_arguments, is_command
 from managers.MessageManager import MessageManager
 from managers.UserDataManager import UserDataManager
@@ -10,101 +11,84 @@ udm = UserDataManager()
 default_message = 'Используйте меню для навигации'
 
 
-
 def simple_reply(message, text):
-    nickname = udm.get_nickname_by_message(message)
-    if not udm.is_registered(nickname):
-        udm.register_user(nickname)
-    if not udm.has_last_message(nickname):
-        udm.add_data(nickname, message.id)
-    result = bot.send_message(message.chat.id, text)
-    udm.set_last_message(nickname, result.id)
+    result = bot.send_message(message.chat.id, text).id
+    udm.save_message(message.chat.id, result)
+    return result
 
 
-def default_reply(message, markup):
-    global default_message
+def reply_menu(message, markup, text=''):
     nickname = udm.get_nickname_by_message(message)
-    if not udm.has_last_message(nickname):
-        udm.add_data(nickname, message.id)
-    last_message = udm.get_last_message(nickname)
-    try:
-        bot.edit_message_reply_markup(message.chat.id, last_message, reply_markup=markup)
-    except:
-        result = bot.send_message(message.chat.id, default_message, reply_markup=markup)
-        udm.set_last_message(nickname, result.id)
+    menu_id = udm.get_menu_id(nickname)
+    bot.edit_message_reply_markup(message.chat.id, menu_id, reply_markup=markup)
+
 
 def optional_reply(message, text, markup):
-    global default_message
-    nickname = udm.get_nickname_by_message(message)
-    if not udm.is_registered(nickname):
-        udm.register_user(nickname)
-    if not udm.has_last_message(nickname):
-        udm.add_data(nickname, message.id)
-    last_message = udm.get_last_message(nickname)
-    try:
-        bot.edit_message_reply_markup(message.chat.id, last_message, reply_markup=markup)
-    except ApiTelegramException:
-        result = bot.send_message(message.chat.id, text, reply_markup=markup)
-        udm.set_last_message(nickname, result.id)
-        return
-    try:
-        bot.edit_message_text(text, message.chat.id, message.id)
-    except:
-        result = bot.send_message(message.chat.id, text, reply_markup=markup)
-        udm.set_last_message(nickname, result.id)
+    result = bot.send_message(message.chat.id, text, reply_markup=markup).id
+    udm.save_message(message.chat.id, result)
 
 
+def safe_delete(chat_id, message_id):
+    time.sleep(1)
+    mm.delete(chat_id, message_id)
 
 
+@bot.message_handler(commands=['menu'])
+@registered
+def resend(message):
+    mm.resend_menu(message)
 
-@bot.message_handler(commands=['start', 'menu'])
+
+@bot.message_handler(commands=['start'])
 @whitelist
 def send_welcome(message):
-
-    default_reply(message, mm.get_start())
-
+    mm.send_menu(message, default_message)
 
 
-@bot.message_handler(content_types=['text'], func=lambda message: message.reply_to_message and message.reply_to_message.text == 'Напишите текст для поиска:')
-@whitelist
+@bot.message_handler(content_types=['text'], func=lambda
+        message: message.reply_to_message and message.reply_to_message.text == 'Напишите текст для поиска:')
+@registered
 def search_func(message):
     squery = message.text
     result = mm.search(squery)
     if result is None:
-        optional_reply(message, 'Ничего не найдено', mm.get_back_button('start', True))
+        simple_reply(message, 'Ничего не найдено')
         return
-    optional_reply(message, 'Результаты поиска:', result)
+    mm.resend_menu(message)
+    reply_menu(message, result, 'Результаты поиска:')
 
-@bot.message_handler(content_types=['text'], func=lambda message: message.reply_to_message and 'Напишите комментарий:' in message.reply_to_message.text)
-@whitelist
+
+@bot.message_handler(content_types=['text'], func=lambda
+        message: message.reply_to_message and 'Напишите комментарий:' in message.reply_to_message.text)
+@registered
 def comment_func(message):
     text = message.text
     item_id = message.reply_to_message.text.split('\n')[0]
     mm.create_comment(item_id, message.from_user.username, text)
-    simple_reply(message, 'Вы успешно оставили комментарий')
-    default_reply(message, mm.get_start())
+    p = mc.force_search_by_id(mm.sm.get_search_list(), item_id, True)
+    path = mm.sm.get_path_by_query(p[0], p[1])
+    item = mm.sm.dynamic_search(path)
+    item.pop(0)
+    item.pop(len(item) - 1)
+    text = mm.make_body(item)
+    nickname = udm.get_nickname_by_message(message)
+    card_id = udm.get_card_id(nickname)
+    mm.update_text_card(text, path, message.chat.id, card_id)
 
 
-@bot.callback_query_handler(func=lambda call: call.data.startswith('search'))
-@whitelist_query
-def search_callback(call):
-    query = call.data.split('"')
-    result = mm.search(query[1])
-    if result is None:
-        optional_reply(call.message, 'Ничего не найдено', mm.get_back_button('start', True))
-        return
-    optional_reply(call.message, 'Результаты поиска:', result)
-    bot.answer_callback_query(callback_query_id=call.id)
-
-
-@bot.message_handler(content_types=['text'], func=lambda message: not message.reply_to_message and not is_command(message.text))
+@bot.message_handler(content_types=['text'],
+                     func=lambda message: not message.reply_to_message and not is_command(message.text))
 @whitelist
 def every(message):
-    default_reply(message, mm.get_start())
+    nickname = udm.get_nickname_by_message(message)
+    if not udm.is_registered(nickname):
+        simple_reply(message, 'Вы не зарегистрированы. Напишите /start')
 
 
-@bot.callback_query_handler(func=lambda call: not call.data == 'start/global_search' and not call.data.endswith('comment'))
-@whitelist_query
+
+@bot.callback_query_handler(
+    func=lambda call: not call.data == 'start/global_search' and not call.data.endswith('comment'))
+@registered_query
 def callback_worker(call):
     path = call.data
     if path.startswith('cache:'):
@@ -112,26 +96,35 @@ def callback_worker(call):
         path = mm.mc.get_cache(key=tpath)
     backpath = mm.get_backpath(path)
     search = mm.sm.dynamic_search(path)
+    nickname = udm.get_nickname_by_message(call.message)
+    card_id = udm.get_card_id(nickname)
+    if path[-1].isdigit() or path == 'start':
+        templ = path.split('/')
+        word = templ[len(templ) - 2]
+        if word in mm.sm.TREE.TREE['start'].keys() or path == 'start':
+            t = Thread(target=safe_delete, args=(call.message.chat.id, card_id,))
+            t.start()
+
     if type(search) is dict:
         keyboard = mm.get_markup(search)
         if path != 'start':
             keyboard.row(mm.get_back_button(backpath))
-        default_reply(call.message, keyboard)
+        reply_menu(call.message, keyboard)
 
     if type(search) is list:
         mm.process_card(search, call, path)
 
     if search is None:
         bot.answer_callback_query(callback_query_id=call.id, text='Ничего не найдено')
-        default_reply(call.message, mm.get_start())
         return
     try:
         bot.answer_callback_query(callback_query_id=call.id)
     except:
         pass
 
+
 @bot.callback_query_handler(func=lambda call: call.data == 'start/global_search')
-@whitelist_query
+@registered_query
 def search(call):
     force = mm.get_force_reply()
     optional_reply(call.message, 'Напишите текст для поиска:', force)
@@ -140,14 +133,16 @@ def search(call):
     except:
         pass
 
+
 @bot.callback_query_handler(func=lambda call: call.data.endswith('comment'))
-@whitelist_query
+@registered_query
 def comment(call):
     path = mm.get_backpath(call.data)
     info = mm.get_info_comment(path)
     text = info + '\n' + 'Напишите комментарий:'
     optional_reply(call.message, text, mm.get_force_reply())
     bot.answer_callback_query(callback_query_id=call.id)
+
 
 @bot.message_handler(commands=['whitelist'])
 @admin
@@ -156,6 +151,7 @@ def whitelist(message):
     nickname = args[0]
     udm.add_to_whitelist(nickname)
     simple_reply(message, 'Добавлено')
+
 
 @bot.message_handler(commands=['setrole'])
 @admin

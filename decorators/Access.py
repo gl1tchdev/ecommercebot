@@ -54,3 +54,23 @@ def customer(func):
             if role == UserRole.CUSTOMER.value:
                 return func(message)
     return wrapper
+
+@lru_cache
+def registered(func):
+    def wrapper(message):
+        user = mc.find('user', {'nickname': message.from_user.username})
+        if len(user) == 0:
+            return
+        else:
+            return func(message)
+    return wrapper
+
+@lru_cache
+def registered_query(func):
+    def wrapper(call):
+        user = mc.find('user', {'nickname': call.message.chat.username})
+        if len(user) == 0:
+            return
+        else:
+            return func(call)
+    return wrapper

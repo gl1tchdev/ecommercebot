@@ -7,8 +7,8 @@ from copy import deepcopy
 class UserDataManager(Singleton):
     mc = monclient()
     _structure = {
-        'user': ['nickname', 'registration_time', 'last_online', 'menu', 'card', 'role'],
-        'messages': ['nickname', 'chat_id', 'user_id']
+        'user': ['nickname', 'chat_id', 'registration_time', 'last_online', 'menu_id', 'card_id', 'role'],
+        'sent_messages': ['chat_id', 'message_id']
     }
     def get_structure(self):
         return deepcopy(self._structure)
@@ -16,55 +16,56 @@ class UserDataManager(Singleton):
     def get_time(self):
         return time.strftime("%d/%m/%y %H:%M")
 
-    def register_user(self, nickname, id=0, card=0,role=UserRole.STAFF):
+    def register_user(self, nickname, chat_id, menu_id=0, role=UserRole.STAFF):
         structure = self.get_structure()['user']
+        t = self.get_time()
         return self.mc.add('user', {
             structure[0]: nickname,
-            structure[1]: self.get_time(),
-            structure[2]: self.get_time(),
-            structure[3]: card,
-            structure[4]: id,
-            structure[5]: role.value
+            structure[1]: chat_id,
+            structure[2]: t,
+            structure[3]: t,
+            structure[4]: menu_id,
+            structure[5]: 0,
+            structure[6]: role.value
         })
 
-    def update_online(self, nickname):
-        structure = self.get_structure()['user']
-        return self.mc.update_one('user',
-                                  {structure[0]: nickname},
-                                  {structure[2]: self.get_time()})
+    def save_message(self, chat_id, message_id):
+        structure = self.get_structure()['sent_messages']
+        return self.mc.add('sent_messages', {
+            structure[0]: chat_id,
+            structure[1]: message_id
+        })
 
-    def been_online(self, nickname):
-        structure = self.get_structure()['user_data']
-        result = self.mc.find('user', {structure[0]: nickname})
-        if len(result) > 0:
-            return result[structure[2]]
-        else:
-            return None
+    def delete_message(self, message_id):
+        return self.mc.delete('sent_messages', {'message_id': message_id})
+
+    def get_menu_id(self, nickname):
+        result = self.mc.find('user', {'nickname': nickname})
+        return result[0]['menu_id'] if len(result) > 0 else 0
+
+    def has_card_id(self, nickname):
+        result = self.mc.find('user', {'nickname': nickname})
+        if len(result) == 0:
+            return False
+        return True if result[0]['card_id'] != 0 else False
+
+    def set_card_id(self, nickname, card_id):
+        return self.mc.update_one('user', {'nickname': nickname}, {'card_id': card_id})
+
+    def get_card_id(self, nickname):
+        result = self.mc.find('user', {'nickname': nickname})
+        return result[0]['card_id']
+
+    def set_menu_id(self, nickname, menu_id):
+        return self.mc.update_one('user', {'nickname': nickname}, {'menu_id': menu_id})
 
     def is_registered(self, nickname):
         structure = self.get_structure()['user']
         result = self.mc.find('user', {structure[0]: nickname})
         return True if len(result) > 0 else False
 
-    def has_last_message(self, nickname):
-        structure = self.get_structure()
-        result = self.mc.find('user_data', {structure['user_data'][0]: nickname})
-        return True if len(result) > 0 else False
-
-    def add_data(self, nickname, id):
-        structure = self.get_structure()
-        self.update_online(nickname)
-        return self.mc.add('user_data', {structure['user_data'][0]: nickname,
-                                         structure['user_data'][1]: id})
-
-    def get_last_message(self, nickname):
-        structure = self.get_structure()
-        self.update_online(nickname)
-        return self.mc.find('user_data', {structure['user_data'][0]: nickname})[0][structure['user_data'][1]]
-
-    def set_last_message(self, nickname, id):
-        structure = self.get_structure()
-        return self.mc.update_one('user_data', {structure['user_data'][0]: nickname}, {structure['user_data'][1]: id})
+    def get_user(self, nickname):
+        return self.mc.find('user', {'nickname': nickname})[0]
 
     def get_nickname_by_message(self, message):
         nickname = ''
