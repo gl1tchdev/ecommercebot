@@ -123,7 +123,6 @@ class MessageManager(Singleton):
             else:
                 try:
                     self.bot.edit_message_text(body, params['chat_id'], card_id, reply_markup=keyboard)
-                    #self.bot.edit_message_caption(body, params['chat_id'], card_id, reply_markup=keyboard)
                 except:
                     self.send_card(func, nickname, call, params, backpath, card_id)
 
@@ -131,7 +130,7 @@ class MessageManager(Singleton):
         if params.get('photo') is None:
             if card_id == 0:
                 if self.need_resend_menu(nickname):
-                    self.resend_menu(call.message, path)
+                    self.resend_menu(call.message, path, default_message=config.welcome_message % call.message.chat.first_name)
                 result = func(**params).id
                 self.udm.set_card_id(nickname, result)
                 self.udm.save_message(params['chat_id'], result)
@@ -139,7 +138,7 @@ class MessageManager(Singleton):
                 self.delete(params['chat_id'], card_id)
                 self.udm.delete_message(card_id)
                 if self.need_resend_menu(nickname):
-                    self.resend_menu(call.message, path)
+                    self.resend_menu(call.message, path, default_message=config.welcome_message % call.message.chat.first_name)
                 result = func(**params).id
                 self.udm.set_card_id(nickname, result)
                 self.udm.save_message(params['chat_id'], result)
@@ -148,7 +147,7 @@ class MessageManager(Singleton):
             if card_id == 0:
                 params['photo'] = f
                 if self.need_resend_menu(nickname):
-                    self.resend_menu(call.message, path)
+                    self.resend_menu(call.message, path, default_message=config.welcome_message % call.message.chat.first_name)
                 result = func(**params).id
                 self.udm.set_card_id(nickname, result)
                 self.udm.save_message(params['chat_id'], result)
@@ -157,7 +156,7 @@ class MessageManager(Singleton):
                 self.udm.delete_message(card_id)
                 params['photo'] = f
                 if self.need_resend_menu(nickname):
-                    self.resend_menu(call.message, path)
+                    self.resend_menu(call.message, path, default_message=config.welcome_message % call.message.chat.first_name)
                 result = func(**params).id
                 self.udm.set_card_id(nickname, result)
                 self.udm.save_message(params['chat_id'], result)
@@ -176,7 +175,7 @@ class MessageManager(Singleton):
 
     def need_resend_menu(self, nickname):
         res = self.udm.get_user(nickname)
-        return abs(res['menu_id'] - res['card_id']) == 1
+        return abs(res['menu_id'] - res['card_id']) > 1
 
     def send_menu(self, message, default_message='Используйте меню для навигации', path='start'):
         nickname = self.udm.get_nickname_by_message(message)

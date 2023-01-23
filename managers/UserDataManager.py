@@ -36,6 +36,9 @@ class UserDataManager(Singleton):
             structure[1]: message_id
         })
 
+    def update_online(self, nickname):
+        return self.mc.update_one('user', {'nickname': nickname}, {'last_online': self.get_time()})
+
     def delete_message(self, message_id):
         return self.mc.delete('sent_messages', {'message_id': message_id})
 
@@ -84,3 +87,10 @@ class UserDataManager(Singleton):
 
     def set_role(self, nickname, role):
         return self.mc.update_one('user', {'nickname': nickname}, {'role': role})
+
+    def get_users(self):
+        result = self.mc.find('user')
+        if len(result) > 0:
+            return result
+        else:
+            return None

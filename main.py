@@ -4,12 +4,13 @@ from telebot.util import extract_arguments, is_command
 from managers.MessageManager import MessageManager
 from managers.UserDataManager import UserDataManager
 from decorators.Access import *
+import config
 
 mm = MessageManager()
 bot = mm.get_bot()
 udm = UserDataManager()
-default_message = 'Используйте меню для навигации'
 
+welcome = lambda text: config.welcome_message % text
 
 def simple_reply(message, text):
     result = bot.send_message(message.chat.id, text).id
@@ -19,6 +20,7 @@ def simple_reply(message, text):
 
 def reply_menu(message, markup, text=''):
     nickname = udm.get_nickname_by_message(message)
+    udm.update_online(nickname)
     menu_id = udm.get_menu_id(nickname)
     bot.edit_message_reply_markup(message.chat.id, menu_id, reply_markup=markup)
 
@@ -28,21 +30,22 @@ def optional_reply(message, text, markup):
     udm.save_message(message.chat.id, result)
 
 
-def safe_delete(chat_id, message_id):
+def safe_delete(chat_id, message_id, nickname):
     time.sleep(1)
     mm.delete(chat_id, message_id)
+    udm.set_card_id(nickname, 0)
 
 
 @bot.message_handler(commands=['menu'])
 @registered
 def resend(message):
-    mm.resend_menu(message)
+    mm.resend_menu(message, default_message=welcome(message.from_user.first_name))
 
 
 @bot.message_handler(commands=['start'])
 @whitelist
 def send_welcome(message):
-    mm.send_menu(message, default_message)
+    mm.send_menu(message, welcome(message.from_user.first_name))
 
 
 @bot.message_handler(content_types=['text'], func=lambda
@@ -98,11 +101,11 @@ def callback_worker(call):
     search = mm.sm.dynamic_search(path)
     nickname = udm.get_nickname_by_message(call.message)
     card_id = udm.get_card_id(nickname)
-    if path[-1].isdigit() or path == 'start':
+    if (path[-1].isdigit() or path == 'start') and (card_id != 0):
         templ = path.split('/')
         word = templ[len(templ) - 2]
         if word in mm.sm.TREE.TREE['start'].keys() or path == 'start':
-            t = Thread(target=safe_delete, args=(call.message.chat.id, card_id,))
+            t = Thread(target=safe_delete, args=(call.message.chat.id, card_id,udm.get_nickname_by_message(call.message),))
             t.start()
 
     if type(search) is dict:
@@ -164,5 +167,17 @@ def set_role(message):
     udm.set_role(nickname, role)
     simple_reply(message, 'Обновлено')
 
+@bot.message_handler(commands=['users'])
+@admin
+def users(message):
+    body = 'Список пользователей:\n\n'
+    user_list = udm.get_users()
+    for user in user_list:
+        body += 'Никнейм: %s\n' % user['nickname']
+        body += 'Дата регистрации: %s\n' % user['registration_time']
+        body += 'Последний онлайн: %s\n' % user['last_online']
+        body += 'Роль: %s\n' % user['role']
+        body += '\n'
+    simple_reply(message, body)
 
 bot.infinity_polling()

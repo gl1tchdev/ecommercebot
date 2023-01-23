@@ -83,8 +83,8 @@ class Validator(Singleton):
             elif fieldtype == FieldType.string:
                 if not required and not elem:
                     continue
-                if any(x in ['/', '|', '"'] for x in elem):
-                    self.failure('Поле \"%s\" не должно содержать символов: /, |, \"' % fields['field_name'])
+                if '/' in elem:
+                    self.failure('Поле \"%s\" не должно содержать символ "/"' % fields['field_name'])
             else:
                 continue
         if self.get_result() and not self.message:
