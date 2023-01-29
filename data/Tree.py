@@ -45,7 +45,8 @@ class Tree(Singleton):
                                     }
                             }
                     },
-                'global_search': '$search'
+                'ask_question': '$question',
+                'global_search': '$search',
             }
         }
     def _get(self):

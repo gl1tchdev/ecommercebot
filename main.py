@@ -90,7 +90,7 @@ def every(message):
 
 
 @bot.callback_query_handler(
-    func=lambda call: not call.data == 'start/global_search' and not call.data.endswith('comment'))
+    func=lambda call: not call.data == 'start/global_search' and not call.data.endswith('comment') and not call.data == 'start/ask_question')
 @registered_query
 def callback_worker(call):
     path = call.data
@@ -151,9 +151,14 @@ def comment(call):
 @admin
 def whitelist(message):
     args = extract_arguments(message.text)
-    nickname = args[0]
-    udm.add_to_whitelist(nickname)
-    simple_reply(message, 'Добавлено')
+    nickname = args
+    res = mm.mc.find('whitelist', {'nickname': nickname})
+    if len(res) > 0:
+        udm.remove_from_whitelist(nickname)
+        simple_reply(message, 'Пользователь удалён из списка')
+    else:
+        udm.add_to_whitelist(nickname)
+        simple_reply(message, 'Пользователь добавлен в список')
 
 
 @bot.message_handler(commands=['setrole'])
@@ -163,6 +168,7 @@ def set_role(message):
     nickname = args[0]
     role = args[1]
     if role not in [e.value for e in UserRole]:
+        simple_reply(message, 'Такой роли нет. Существующие роли: admin, staff, customer')
         return
     udm.set_role(nickname, role)
     simple_reply(message, 'Обновлено')
@@ -179,5 +185,25 @@ def users(message):
         body += 'Роль: %s\n' % user['role']
         body += '\n'
     simple_reply(message, body)
+
+@bot.callback_query_handler(func=lambda call: call.data == 'start/ask_question')
+@registered_query
+def question(call):
+    force = mm.get_force_reply()
+    optional_reply(call.message, 'Напишите свой вопрос:', force)
+    try:
+        bot.answer_callback_query(callback_query_id=call.id)
+    except:
+        pass
+
+@bot.message_handler(content_types=['text'], func=lambda
+        message: message.reply_to_message and 'Напишите свой вопрос:' in message.reply_to_message.text)
+def process_question(message):
+    question = message.text
+    user_nickname = udm.get_nickname_by_message(message)
+    chat_id = udm.get_user(config.owner)['chat_id']
+    body = 'Вопрос от @%s:\n%s' % (user_nickname, question)
+    bot.send_message(chat_id, body)
+    simple_reply(message, 'Ваш вопрос получен. Администратор свяжется с Вами в течение суток')
 
 bot.infinity_polling()

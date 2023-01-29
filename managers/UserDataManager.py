@@ -85,6 +85,13 @@ class UserDataManager(Singleton):
     def add_to_whitelist(self, nickname):
         return self.mc.add('whitelist', {'nickname': nickname})
 
+    def remove_from_whitelist(self, nickname):
+        self.mc.remove('user', {'nickname': nickname})
+        return self.mc.remove('whitelist', {'nickname': nickname})
+
+    def delete_user(self, nickname):
+        return self.mc.remove('user', {'nickname': nickname})
+
     def set_role(self, nickname, role):
         return self.mc.update_one('user', {'nickname': nickname}, {'role': role})
 

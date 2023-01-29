@@ -27,6 +27,7 @@ class SearchManager(Singleton):
 
         self.endpoints = {
             'search': self.global_search,
+            'ask_question': self.ask_question,
             'model_card': self.model_card,
             'cartridge_card': self.cartridge_card,
             'evaporator_card': self.evaporator_card,
@@ -50,7 +51,8 @@ class SearchManager(Singleton):
         self.translations = {
             'models': self.vm.get_sheet_name_by_service_name('models'),
             'devices': 'Устройства',
-            'global_search': 'Поиск',
+            'global_search': 'Поиск🔎',
+            'ask_question': 'Задать вопрос❔',
             'liquids': self.vm.get_sheet_name_by_service_name('liquids'),
             'cartridges': self.vm.get_sheet_name_by_service_name('cartridges'),
             'evaporators': self.vm.get_sheet_name_by_service_name('evaporators'),
@@ -247,6 +249,9 @@ class SearchManager(Singleton):
         return buttons
 
     def global_search(self, query):
+        pass
+
+    def ask_question(self, query):
         pass
 
     def liquids_manufacturer(self, query):
