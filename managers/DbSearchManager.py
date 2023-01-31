@@ -51,9 +51,10 @@ class SearchManager(Singleton):
         self.translations = {
             'models': self.vm.get_sheet_name_by_service_name('models'),
             'devices': 'Устройства',
-            'global_search': 'Поиск🔎',
+            'global_search': 'Поиск 🔎',
             'ask_question': 'Задать вопрос❔',
             'liquids': self.vm.get_sheet_name_by_service_name('liquids'),
+            'liquids_brands': self.vm.get_sheet_name_by_service_name('liquids_brands'),
             'cartridges': self.vm.get_sheet_name_by_service_name('cartridges'),
             'evaporators': self.vm.get_sheet_name_by_service_name('evaporators'),
             'tanks': self.vm.get_sheet_name_by_service_name('tanks'),

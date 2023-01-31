@@ -83,6 +83,8 @@ class Validator(Singleton):
             elif fieldtype == FieldType.string:
                 if not required and not elem:
                     continue
+                if len(elem) > 4095:
+                    self.failure('Поле %s не должно быть больше 4096 символов' % fields['field_name'])
                 if '/' in elem:
                     self.failure('Поле \"%s\" не должно содержать символ "/"' % fields['field_name'])
             else:

@@ -35,6 +35,8 @@ class UserDataManager(Singleton):
             structure[0]: chat_id,
             structure[1]: message_id
         })
+    def get_whitelist(self):
+        return self.mc.find('whitelist')
 
     def update_online(self, nickname):
         return self.mc.update_one('user', {'nickname': nickname}, {'last_online': self.get_time()})

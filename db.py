@@ -2,5 +2,8 @@ from tasks.SheetSync import sync
 from time import sleep
 
 while True:
-    sync()
-    sleep(10)
+    try:
+        sync()
+    except:
+        continue
+    sleep(7)

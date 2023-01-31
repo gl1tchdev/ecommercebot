@@ -67,6 +67,9 @@ def search_func(message):
 def comment_func(message):
     text = message.text
     item_id = message.reply_to_message.text.split('\n')[0]
+    if len(text) > 4095:
+        simple_reply(message, 'Комментарий не может содержать больше 4096 символов')
+        return
     mm.create_comment(item_id, message.from_user.username, text)
     p = mc.force_search_by_id(mm.sm.get_search_list(), item_id, True)
     path = mm.sm.get_path_by_query(p[0], p[1])
@@ -150,7 +153,15 @@ def comment(call):
 @bot.message_handler(commands=['whitelist'])
 @admin
 def whitelist(message):
-    args = extract_arguments(message.text).split(' ')
+    args = extract_arguments(message.text)
+    if len(args) == 0:
+        whitelist = udm.get_whitelist()
+        if len(whitelist) == 0:
+            return
+        users = '\n'.join([a['nickname'] for a in whitelist])
+        simple_reply(message, users)
+        return
+    args = args.split(' ')
     nickname = args[0]
     res = mm.mc.find('whitelist', {'nickname': nickname})
     if len(res) > 0:
@@ -166,6 +177,10 @@ def whitelist(message):
 def set_role(message):
     args = extract_arguments(message.text).split(' ')
     nickname = args[0]
+    if len(args) == 1:
+        udm.set_role(nickname, UserRole.STAFF.value)
+        simple_reply(message, 'Роль пользователя установлена на STAFF')
+        return
     role = args[1]
     if role not in [e.value for e in UserRole]:
         simple_reply(message, 'Такой роли нет. Существующие роли: admin, staff, customer')
