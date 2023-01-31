@@ -150,8 +150,8 @@ def comment(call):
 @bot.message_handler(commands=['whitelist'])
 @admin
 def whitelist(message):
-    args = extract_arguments(message.text)
-    nickname = args
+    args = extract_arguments(message.text).split(' ')
+    nickname = args[0]
     res = mm.mc.find('whitelist', {'nickname': nickname})
     if len(res) > 0:
         udm.remove_from_whitelist(nickname)
@@ -164,10 +164,12 @@ def whitelist(message):
 @bot.message_handler(commands=['setrole'])
 @admin
 def set_role(message):
-    args = extract_arguments(message.text)
+    args = extract_arguments(message.text).split(' ')
     nickname = args[0]
     role = args[1]
     if role not in [e.value for e in UserRole]:
+        print(role)
+        print([e.value for e in UserRole])
         simple_reply(message, 'Такой роли нет. Существующие роли: admin, staff, customer')
         return
     udm.set_role(nickname, role)
