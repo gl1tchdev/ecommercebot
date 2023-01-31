@@ -168,8 +168,6 @@ def set_role(message):
     nickname = args[0]
     role = args[1]
     if role not in [e.value for e in UserRole]:
-        print(role)
-        print([e.value for e in UserRole])
         simple_reply(message, 'Такой роли нет. Существующие роли: admin, staff, customer')
         return
     udm.set_role(nickname, role)

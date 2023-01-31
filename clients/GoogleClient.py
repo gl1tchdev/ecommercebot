@@ -1,14 +1,16 @@
 import httplib2
 import apiclient.discovery
+import os
 from oauth2client.service_account import ServiceAccountCredentials
 from classes.Singleton import Singleton
 import config
 
 class GoogleClient(Singleton):
     def __init__(self):
+        temp = os.path.dirname(__file__).replace('clients', '')
         self.spreadsheet_id = config.spreadsheet_id
         credentials = ServiceAccountCredentials.from_json_keyfile_name(
-            'credentials.json',
+            temp + 'credentials.json',
             ['https://www.googleapis.com/auth/spreadsheets',
              'https://www.googleapis.com/auth/drive'])
         httpAuth = credentials.authorize(httplib2.Http())
