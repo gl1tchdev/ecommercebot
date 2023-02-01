@@ -166,12 +166,8 @@ class SearchManager(Singleton):
         result = self.mc.find(collection, search)
         return True if len(result) == 0 else False
 
-    def check(self, s, photo=False):
-        if not photo:
-            return s if s else 'empty'
-        else:
-            photo_obj = self.mc.find('photos', {'url': s})
-            return photo_obj[0]['filename'] if len(photo_obj) > 0 else 'empty'
+    def check(self, s):
+        return s if s else 'empty'
 
     def get_devices(self, query):
         search = self.mc.find('models', query)
@@ -304,7 +300,7 @@ class SearchManager(Singleton):
             comments = self.list_comments(query)
             if not comments is None:
                 result.append({self.hm.underline('Комментарии'): comments})
-            result.append(self.check(model['url'], True))
+            result.append(self.check(model['url']))
             return result
         else:
             return None
@@ -320,7 +316,7 @@ class SearchManager(Singleton):
             comments = self.list_comments(query)
             if not comments is None:
                 result.append({self.hm.underline('Комментарии'): comments})
-            result.append(self.check(cartridge['url'], True))
+            result.append(self.check(cartridge['url']))
             return result
         else:
             return None
@@ -336,7 +332,7 @@ class SearchManager(Singleton):
             comments = self.list_comments(query)
             if not comments is None:
                 result.append({self.hm.underline('Комментарии'): comments})
-            result.append(self.check(item['url'], True))
+            result.append(self.check(item['url']))
             return result
         else:
             return None
@@ -352,7 +348,7 @@ class SearchManager(Singleton):
             comments = self.list_comments(query)
             if not comments is None:
                 result.append({self.hm.underline('Комментарии'): comments})
-            result.append(self.check(item['url'], True))
+            result.append(self.check(item['url']))
             return result
         else:
             return None
@@ -368,7 +364,7 @@ class SearchManager(Singleton):
             comments = self.list_comments(query)
             if not comments is None:
                 result.append({self.hm.underline('Комментарии'): comments})
-            result.append(self.check(item['url'], True))
+            result.append(self.check(item['url']))
             return result
         else:
             return None
@@ -383,7 +379,7 @@ class SearchManager(Singleton):
             comments = self.list_comments(query)
             if not comments is None:
                 result.append({self.hm.underline('Комментарии'): comments})
-            result.append(self.check(item['url'], True))
+            result.append(self.check(item['url']))
             return result
         else:
             return None

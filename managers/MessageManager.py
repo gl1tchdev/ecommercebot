@@ -115,8 +115,7 @@ class MessageManager(Singleton):
             card_id = self.udm.get_card_id(nickname)
             if func is funcs[0]:
                 try:
-                    with open(params['photo'], 'rb') as f:
-                        self.bot.edit_message_media(media=types.InputMedia(type='photo', media=f), chat_id=params['chat_id'], message_id=card_id)
+                    self.bot.edit_message_media(media=types.InputMediaPhoto(media=params['photo']), chat_id=params['chat_id'], message_id=card_id)
                     self.bot.edit_message_caption(body, params['chat_id'], card_id, reply_markup=keyboard)
                 except apihelper.ApiTelegramException:
                     self.send_card(func, nickname, call, params, backpath, card_id)
@@ -143,23 +142,20 @@ class MessageManager(Singleton):
                 self.udm.set_card_id(nickname, result)
                 self.udm.save_message(params['chat_id'], result)
             return
-        with open(params['photo'], 'rb') as f:
-            if card_id == 0:
-                params['photo'] = f
-                if self.need_resend_menu(nickname):
-                    self.resend_menu(call.message, path, default_message=config.welcome_message % call.message.chat.first_name)
-                result = func(**params).id
-                self.udm.set_card_id(nickname, result)
-                self.udm.save_message(params['chat_id'], result)
-            else:
-                self.delete(params['chat_id'], card_id)
-                self.udm.delete_message(card_id)
-                params['photo'] = f
-                if self.need_resend_menu(nickname):
-                    self.resend_menu(call.message, path, default_message=config.welcome_message % call.message.chat.first_name)
-                result = func(**params).id
-                self.udm.set_card_id(nickname, result)
-                self.udm.save_message(params['chat_id'], result)
+        if card_id == 0:
+            if self.need_resend_menu(nickname):
+                self.resend_menu(call.message, path, default_message=config.welcome_message % call.message.chat.first_name)
+            result = func(**params).id
+            self.udm.set_card_id(nickname, result)
+            self.udm.save_message(params['chat_id'], result)
+        else:
+            self.delete(params['chat_id'], card_id)
+            self.udm.delete_message(card_id)
+            if self.need_resend_menu(nickname):
+                self.resend_menu(call.message, path, default_message=config.welcome_message % call.message.chat.first_name)
+            result = func(**params).id
+            self.udm.set_card_id(nickname, result)
+            self.udm.save_message(params['chat_id'], result)
 
     def update_text_card(self, body, path, chat_id, message_id):
         try:

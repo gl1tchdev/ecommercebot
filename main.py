@@ -57,7 +57,7 @@ def search_func(message):
     if result is None:
         simple_reply(message, 'Ничего не найдено')
         return
-    mm.resend_menu(message)
+    mm.resend_menu(message, default_message=welcome(message.from_user.first_name))
     reply_menu(message, result, 'Результаты поиска:')
 
 

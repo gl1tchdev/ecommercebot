@@ -2,7 +2,6 @@ from classes.SheetDataValidator import Validator
 from clients.GoogleClient import GoogleClient
 from managers.DbUploadManager import UploadManager
 from managers.PhotoManager import PhotoManager
-from tasks import ImgDownload
 
 def sync():
     validator = Validator()
@@ -82,5 +81,3 @@ def sync():
                     ph.delete_photo(elem['url'])
                 mc.delete('comments', {'doc_id': str(id)})
 
-
-    ImgDownload.download()
