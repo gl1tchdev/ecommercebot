@@ -4,6 +4,7 @@ from telebot.util import extract_arguments, is_command
 from managers.MessageManager import MessageManager
 from managers.UserDataManager import UserDataManager
 from decorators.Access import *
+from subprocess import call
 import config
 
 mm = MessageManager()
@@ -200,6 +201,34 @@ def users(message):
         body += 'Роль: %s\n' % user['role']
         body += '\n'
     simple_reply(message, body)
+
+@bot.message_handler(commands=['help'])
+@registered
+def help(message):
+    body = 'Список команд:\n'
+    body += '/whitelist [nickname]: nickname - ник пользователя в тг. если не указывать никнейм выведет список людей, которые есть в вайтлисте. если указать никнейм и пользователя нет в вайтлисте он будет добавлен.'
+    body += 'если указать и пользователь был в списке то пользователь будет удален и потеряет доступ к функционалу. Команда доступна администраторам\n\n'
+    body += '/setrole |nickname| [role]: nickname - ник пользователя в тг, role - роль (права пользователя). Существующие роли: admin, staff, customer. Разным ролям доступны разные команды в боте.'
+    body += 'Если не указывать роль то пользователю будет присвоена роль staff. Команда доступна администраторам\n\n'
+    body += '/users: выводит список зарегистрированных пользователей. Команда доступна администраторам\n\n'
+    body += '/restart_services: перезапуск сервисов бота. Команда доступна администраторам\n\n'
+    body += '/restart_server: перезапуск сервера бота. Команда доступна администраторам\n\n'
+    print(message, body)
+    simple_reply(message, body)
+
+@bot.message_handler(commands=['restart_services'])
+@admin
+def restart(message):
+    simple_reply(message, 'Сервисы перезапускаются...')
+    call('systemctl restart bot')
+    call('systemctl restart google')
+    call('systemctl restart mongod')
+
+@bot.message_handler(commands=['restart_server'])
+@admin
+def restart_server(message):
+    simple_reply(message, 'Сервер перезапускается и будет доступен в течение нескольких минут')
+    call('reboot')
 
 @bot.callback_query_handler(func=lambda call: call.data == 'start/ask_question')
 @registered_query
