@@ -1,1 +1,1 @@
-from profiles.development import *
+from profiles.production import *
