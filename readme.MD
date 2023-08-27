@@ -10,7 +10,7 @@ source env/bin/activate
 pip3 install -r requirements.txt
 ```
 # Run
-Create config.py and set next variables:
+Create "profiles" dir, then "production.py" and set next variables:
 ```
 owner = 'owner id tg'
 welcome_message = 'welcome message for users' 
