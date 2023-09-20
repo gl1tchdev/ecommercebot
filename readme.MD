@@ -1,4 +1,9 @@
-# Install on linux
+# Description
+The bot's task is to collect data from the table and display it in a telegram in a readable form
+
+[![Demo](https://img.youtube.com/vi/fSNrtCuDQxo/0.jpg)](https://www.youtube.com/watch?v=fSNrtCuDQxo)
+
+# Install
 ``` 
 mkdir vapeshopbot
 ```
@@ -20,5 +25,4 @@ spreadsheet_id = 'spreadsheet id google sheets'
 ```
 python main.py
 ```
-# Demo
-[![Demo](https://img.youtube.com/vi/fSNrtCuDQxo/0.jpg)](https://www.youtube.com/watch?v=fSNrtCuDQxo)
+For production run as system daemon
