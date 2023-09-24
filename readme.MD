@@ -24,5 +24,6 @@ spreadsheet_id = 'spreadsheet id google sheets'
 ```
 ```
 python main.py
+python db.py
 ```
-For production run as system daemon
+For production run these files as system daemons
